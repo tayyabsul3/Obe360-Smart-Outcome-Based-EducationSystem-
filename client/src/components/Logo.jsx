@@ -1,0 +1,16 @@
+import React from 'react';
+
+const ObeLogo = ({ className = "w-8 h-8" }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 512 512"
+        className={className}
+        fill="currentColor" // Allows Tailwind text-color to control fill
+    >
+        <path d="M256 64C150 64 64 150 64 256s86 192 192 192c42 0 81-13 113-36l26 36c-39 28-87 45-139 45C114.6 493 0 378.4 0 237 0 114.6 114.6 0 256 0c117 0 215 78 245 186l-46 14C428 108 349 43 256 43V64z" />
+        <path d="M512 180l-70-60v120z" />
+        <path d="M256 160L128 224l128 64 128-64-128-64zm0 150c-25 0-49-4-70-11v55c0 20 31 36 70 36s70-16 70-36v-55c-21 7-45 11-70 11z" />
+    </svg>
+);
+
+export default ObeLogo;
