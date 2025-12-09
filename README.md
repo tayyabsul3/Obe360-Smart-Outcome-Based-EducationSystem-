@@ -1,6 +1,6 @@
 # OBE360 - Smart Outcome Based Education System
 
-![OBE360 Illustration](./client/obe360_hero_banner.png)
+![OBE360 Illustration](./client/public/obe360_hero_banner.png)
 
 ## Overview
 
