@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import useAuthStore from '@/store/authStore';
+
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
@@ -10,14 +11,13 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Loader } from '@/components/ui/loader';
 
 // Admin Pages
-import {
-  UserManagement,
-  AcademicPrograms,
-  CurriculumManager,
-  CourseAllocation,
-  ReportsCenter,
-  AdminSettings
-} from '@/pages/admin/AdminPages';
+import Programs from '@/pages/admin/Programs';
+import Courses from '@/pages/admin/Courses';
+import Classes from '@/pages/admin/Classes';
+import Assignments from '@/pages/admin/Assignments';
+import Teachers from '@/pages/admin/Teachers';
+// Placeholders
+import { ReportsCenter, AdminSettings } from '@/pages/admin/AdminPages';
 
 // Teacher Pages
 import {
@@ -33,8 +33,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 import ChangePassword from '@/pages/auth/ChangePassword';
 
-// ...
-
 function App() {
   const checkSession = useAuthStore((state) => state.checkSession);
   const { user, loading, isFirstLogin } = useAuthStore();
@@ -47,8 +45,6 @@ function App() {
     return <Loader fullScreen text="Initializing OBE360..." />;
   }
 
-  // Guard: Force Password Change if First Login
-  // Note: We need a way to allow access TO the change-password route itself.
   const ProtectedRoute = ({ children }) => {
     if (!user) return <Navigate to="/login" />;
     if (isFirstLogin && window.location.pathname !== '/change-password') {
@@ -67,12 +63,10 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-          {/* <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} /> */}
 
-          {/* Change Password Route (Protected but isolated) */}
           <Route path="/change-password" element={user ? <ChangePassword /> : <Navigate to="/login" />} />
 
-          {/* Protected Routes with Layout */}
+          {/* Protected Routes with MainLayout */}
           <Route element={
             <ProtectedRoute>
               <MainLayout />
@@ -80,13 +74,13 @@ function App() {
           }>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
-            {/* ... other routes ... */}
 
             {/* Admin Routes */}
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/programs" element={<AcademicPrograms />} />
-            <Route path="/admin/curriculum" element={<CurriculumManager />} />
-            <Route path="/admin/allocation" element={<CourseAllocation />} />
+            <Route path="/admin/programs" element={<Programs />} />
+            <Route path="/admin/courses" element={<Courses />} />
+            <Route path="/admin/classes" element={<Classes />} />
+            <Route path="/admin/assignments" element={<Assignments />} />
+            <Route path="/admin/teachers" element={<Teachers />} />
             <Route path="/admin/reports" element={<ReportsCenter />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
 

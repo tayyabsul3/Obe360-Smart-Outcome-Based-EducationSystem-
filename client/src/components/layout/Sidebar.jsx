@@ -6,8 +6,6 @@ import {
     GraduationCap,
     BookOpen,
     Briefcase,
-    FileText,
-    Settings,
     Activity,
     Book,
     GitMerge,
@@ -19,12 +17,19 @@ import {
     HelpCircle,
     ChevronLeft,
     ChevronRight,
-    LogOut
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import ObeLogo from '@/components/Logo';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function Sidebar({ collapsed, setCollapsed }) {
     const role = useAuthStore((state) => state.role) || 'teacher'; // Default to teacher
@@ -32,12 +37,11 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     // Admin Navigation
     const adminLinks = [
         { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-        { name: 'User Management', to: '/admin/users', icon: Users },
-        { name: 'Academic Programs', to: '/admin/programs', icon: GraduationCap },
-        { name: 'Curriculum Manager', to: '/admin/curriculum', icon: BookOpen },
-        { name: 'Course Allocation', to: '/admin/allocation', icon: Briefcase },
-        { name: 'Reports Center', to: '/admin/reports', icon: FileText },
-        { name: 'Settings', to: '/admin/settings', icon: Settings },
+        { name: 'Programs', to: '/admin/programs', icon: GraduationCap },
+        { name: 'Courses', to: '/admin/courses', icon: BookOpen },
+        { name: 'Classes', to: '/admin/classes', icon: Users },
+        { name: 'Assignments', to: '/admin/assignments', icon: Briefcase },
+        { name: 'Teachers', to: '/admin/teachers', icon: Activity },
     ];
 
     // Teacher Navigation
@@ -123,10 +127,22 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
             {/* Footer */}
             <div className="p-4 border-t border-slate-700">
-                <Button variant="ghost" className={cn("w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800", collapsed && "justify-center px-0")}>
-                    <HelpCircle size={22} />
-                    {!collapsed && <span className="ml-3">Help & Support</span>}
-                </Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" className={cn("w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800", collapsed && "justify-center px-0")}>
+                            <HelpCircle size={22} />
+                            {!collapsed && <span className="ml-3">Help & Support</span>}
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Coming Soon</DialogTitle>
+                            <DialogDescription>
+                                The Help & Support module is currently under development. Please contact the system administrator for immediate assistance.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </DialogContent>
+                </Dialog>
             </div>
         </aside>
     );

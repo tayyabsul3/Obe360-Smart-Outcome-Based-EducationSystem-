@@ -174,9 +174,24 @@ const updatePassword = async (req, res) => {
   }
 };
 
+const getTeachers = async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('role', 'teacher');
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   inviteTeacher,
   register,
   login,
-  updatePassword
+  updatePassword,
+  getTeachers
 };

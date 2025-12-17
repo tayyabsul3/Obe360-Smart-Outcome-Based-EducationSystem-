@@ -1,4 +1,12 @@
-import { Bell, User, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, User, LogOut, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import useAuthStore from '@/store/authStore';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -16,28 +24,55 @@ export default function Header() {
     };
 
     // Generate readable breadcrumb from path
-    const getBreadcrumb = () => {
+    const renderBreadcrumbs = () => {
         const path = location.pathname;
-        if (path === '/dashboard') return 'Dashboard';
+        if (path === '/dashboard') return <span className="font-semibold text-gray-800">Dashboard</span>;
 
         const parts = path.split('/').filter(Boolean);
-        return parts.map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' > ');
+
+        return (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span className="hover:text-gray-900 transition-colors cursor-pointer" onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                </span>
+                {parts.slice(1).map((part, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                        <ChevronRight size={14} className="text-gray-400" />
+                        <span className={`capitalize ${index === parts.slice(1).length - 1 ? 'font-semibold text-gray-800' : ''}`}>
+                            {part.replace(/-/g, ' ')}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     return (
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
             {/* Breadcrumbs */}
             <div>
-                <h2 className="text-gray-600 font-medium text-lg">{getBreadcrumb()}</h2>
+                {renderBreadcrumbs()}
             </div>
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative text-gray-500 hover:text-blue-600">
-                    <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                </Button>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="relative text-gray-500 hover:text-blue-600">
+                            <Bell size={20} />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Notifications</DialogTitle>
+                            <DialogDescription>
+                                The notification system is coming soon! Stay tuned for updates.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Profile Dropdown */}
                 <div className="relative">

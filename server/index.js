@@ -5,6 +5,10 @@ const morgan = require('morgan');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
+const programRoutes = require('./routes/programRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const classRoutes = require('./routes/classRoutes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,6 +21,11 @@ app.use(express.json());
 
 // Routes
 app.use('/api', authRoutes);
+app.use('/api/programs', programRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/classes', classRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
 // Health Check
 app.get('/', (req, res) => {
