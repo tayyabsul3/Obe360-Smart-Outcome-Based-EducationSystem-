@@ -52,7 +52,27 @@ const createAssignment = async (req, res) => {
     }
 };
 
+const getTeacherAssignments = async (req, res) => {
+    const { teacherId } = req.params;
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('course_assignments')
+            .select(`
+                *,
+                course:courses(*),
+                class:classes(*)
+            `)
+            .eq('teacher_id', teacherId);
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getAssignments,
-    createAssignment
+    createAssignment,
+    getTeacherAssignments
 };

@@ -16,6 +16,22 @@ const getCourses = async (req, res) => {
     }
 };
 
+const getCourseById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('courses')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(404).json({ error: "Course not found" });
+    }
+};
+
 const createCourse = async (req, res) => {
     const { title, code, credit_hours, lab_hours } = req.body;
     try {
@@ -143,6 +159,7 @@ const addCoursesToStudyPlanBulk = async (req, res) => {
 
 module.exports = {
     getCourses,
+    getCourseById,
     createCourse,
     createCoursesBulk,
     getProgramCourses,

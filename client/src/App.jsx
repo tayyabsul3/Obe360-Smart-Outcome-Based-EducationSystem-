@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import useAuthStore from '@/store/authStore';
+import useUIStore from '@/store/uiStore';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -16,6 +17,7 @@ import Courses from '@/pages/admin/Courses';
 import Classes from '@/pages/admin/Classes';
 import Assignments from '@/pages/admin/Assignments';
 import Teachers from '@/pages/admin/Teachers';
+import AdminStudents from '@/pages/admin/Students'; // Renamed to identify as Admin
 // Placeholders
 import { ReportsCenter, AdminSettings } from '@/pages/admin/AdminPages';
 
@@ -23,19 +25,36 @@ import { ReportsCenter, AdminSettings } from '@/pages/admin/AdminPages';
 import {
   MyCourses,
   OBEMapping,
-  Assessments,
   Gradebook,
   Analytics,
   Gamification,
-  Feedback
+  Feedback,
+  CLOManager, // Added
+  AssessmentManager,
+  Students
 } from '@/pages/teacher/TeacherPages';
+import TeacherRootLayout from '@/pages/teacher/TeacherRootLayout';
+import TeacherCourseLayout from '@/pages/teacher/TeacherCourseLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 
 import ChangePassword from '@/pages/auth/ChangePassword';
 
+import GlobalLoader from '@/components/ui/global-loader';
+
 function App() {
   const checkSession = useAuthStore((state) => state.checkSession);
   const { user, loading, isFirstLogin } = useAuthStore();
+
+  const { fontScale } = useUIStore();
+
+  useEffect(() => {
+    // Apply font scale to root
+    const root = document.documentElement;
+    root.classList.remove('text-sm', 'text-base', 'text-lg');
+    if (fontScale === 'small') root.classList.add('text-sm');
+    if (fontScale === 'medium') root.classList.add('text-base');
+    if (fontScale === 'large') root.classList.add('text-lg');
+  }, [fontScale]);
 
   useEffect(() => {
     checkSession();
@@ -59,6 +78,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <GlobalLoader />
         <Toaster position="top-right" richColors closeButton duration={5000} />
         <Routes>
           {/* Public Routes */}
@@ -81,17 +101,37 @@ function App() {
             <Route path="/admin/classes" element={<Classes />} />
             <Route path="/admin/assignments" element={<Assignments />} />
             <Route path="/admin/teachers" element={<Teachers />} />
+            <Route path="/admin/students" element={<AdminStudents />} />
             <Route path="/admin/reports" element={<ReportsCenter />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
 
             {/* Teacher Routes */}
-            <Route path="/teacher/courses" element={<MyCourses />} />
-            <Route path="/teacher/obe-mapping" element={<OBEMapping />} />
-            <Route path="/teacher/assessments" element={<Assessments />} />
-            <Route path="/teacher/gradebook" element={<Gradebook />} />
-            <Route path="/teacher/analytics" element={<Analytics />} />
-            <Route path="/teacher/gamification" element={<Gamification />} />
-            <Route path="/teacher/feedback" element={<Feedback />} />
+            {/* Teacher Routes - New Layout */}
+            {/* Teacher Routes - Restructured */}
+          </Route>
+
+          {/* Teacher Routes - Independent Layout */}
+          <Route path="/teacher" element={
+            <ProtectedRoute>
+              <TeacherRootLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="courses" replace />} />
+            <Route path="courses" element={<MyCourses />} />
+            <Route path="analytics" element={<Analytics />} />
+
+            {/* Course Context Routes */}
+            <Route path="course/:courseId" element={<TeacherCourseLayout />}>
+              <Route index element={<Navigate to="clos" replace />} />
+              <Route path="clos" element={<CLOManager />} />
+              <Route path="assessments" element={<AssessmentManager />} />
+              <Route path="gradebook" element={<Gradebook />} />
+              <Route path="students" element={<Students />} />
+              <Route path="analytics" element={<Analytics />} />
+            </Route>
+
+            <Route path="gamification" element={<Gamification />} />
+            <Route path="feedback" element={<Feedback />} />
           </Route>
 
           {/* Catch-all redirect */}

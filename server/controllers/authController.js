@@ -16,14 +16,9 @@ const inviteTeacher = async (req, res) => {
   }
 
   try {
-    // 1. Check if user already exists (optional, handled by createUser error usually)
 
-    // 2. Generate a temporary password
     const password = generatePassword();
 
-    // 3. Create User in Supabase Auth
-    // We use createUser instead of inviteUserByEmail to set the password manually.
-    // We confirm the email automatically since it's an admin invite.
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,

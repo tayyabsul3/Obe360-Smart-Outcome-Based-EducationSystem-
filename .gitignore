@@ -28,3 +28,7 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+
+# Generated Files
+# migrations/
+*.csv

@@ -25,6 +25,9 @@ app.use('/api/programs', programRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/clos', require('./routes/cloRoutes'));
+app.use('/api/assessments', require('./routes/assessmentRoutes'));
+app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
 // Health Check
