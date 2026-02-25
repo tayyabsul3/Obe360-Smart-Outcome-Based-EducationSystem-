@@ -59,12 +59,19 @@ export default function Gradebook() {
     const fetchQuestionsAndMarks = async (assessmentId) => {
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/${assessmentId}/questions`);
-            if (res.ok) {
-                const qData = await res.json();
-                setQuestions(qData);
-                // Ideally fetch existings marks here too and populate `marks` state
-                // For now, let's just allow entry.
+            const [qRes, mRes] = await Promise.all([
+                fetch(`http://localhost:5000/api/assessments/${assessmentId}/questions`),
+                fetch(`http://localhost:5000/api/assessments/${assessmentId}/marks`)
+            ]);
+
+            if (qRes.ok) setQuestions(await qRes.json());
+            if (mRes.ok) {
+                const mData = await mRes.json();
+                const marksMap = {};
+                mData.forEach(m => {
+                    marksMap[`${m.student_id}_${m.question_id}`] = m.obtained_marks;
+                });
+                setMarks(marksMap);
             }
         } catch (error) {
             console.error(error);

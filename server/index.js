@@ -29,6 +29,7 @@ app.use('/api/clos', require('./routes/cloRoutes'));
 app.use('/api/assessments', require('./routes/assessmentRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/semesters', require('./routes/semesterRoutes'));
 
 // Health Check
 app.get('/', (req, res) => {

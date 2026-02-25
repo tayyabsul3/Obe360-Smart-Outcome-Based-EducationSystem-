@@ -1,5 +1,20 @@
 const supabaseAdmin = require('../config/supabase');
 
+const getCLOMappings = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('clo_plo_mapping')
+            .select('*')
+            .eq('clo_id', id);
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 const getCLOs = async (req, res) => {
     const { courseId } = req.params;
     try {
@@ -35,9 +50,9 @@ const createCLO = async (req, res) => {
                 .insert([{
                     clo_id: clo.id,
                     plo_id: plo_id,
-                    level_of_emphasis: 'Medium' // Default or passed from frontend? User said "level/type configuration there as well" - maybe emphasis?
-                    // User said: "Map to Existing PLO and level and type configuration" - Assuming 'level' meant Bloom's level on CLO.
-                    // But mapping also has emphasis. Let's stick to simple mapping for now.
+                    learning_type: req.body.learning_type || type || 'Cognitive',
+                    level: req.body.level || 'C1',
+                    emphasis_level: req.body.emphasis_level || 'Medium'
                 }]);
 
             if (mapError) console.error("Mapping Error:", mapError);
@@ -62,12 +77,17 @@ const updateCLO = async (req, res) => {
 
         if (error) throw error;
 
-        // Update mapping if plo_id is present (Upsert logic is complex, maybe delete & insert?)
-        // For simplicity, let's delete old mapping and insert new one if plo_id is provided
+        // Update mapping if plo_id is present
         if (plo_id) {
             await supabaseAdmin.from('clo_plo_mapping').delete().eq('clo_id', id);
             if (plo_id !== 'none') {
-                await supabaseAdmin.from('clo_plo_mapping').insert([{ clo_id: id, plo_id }]);
+                await supabaseAdmin.from('clo_plo_mapping').insert([{
+                    clo_id: id,
+                    plo_id,
+                    learning_type: req.body.learning_type || type || 'Cognitive',
+                    level: req.body.level || 'C1',
+                    emphasis_level: req.body.emphasis_level || 'Medium'
+                }]);
             }
         }
 
@@ -94,6 +114,7 @@ const deleteCLO = async (req, res) => {
 
 module.exports = {
     getCLOs,
+    getCLOMappings,
     createCLO,
     updateCLO,
     deleteCLO

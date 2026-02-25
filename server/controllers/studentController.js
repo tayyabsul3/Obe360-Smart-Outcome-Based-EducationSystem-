@@ -11,7 +11,11 @@ const getCourseStudents = async (req, res) => {
                     id,
                     name,
                     reg_no,
-                    email
+                    email,
+                    father_name,
+                    current_city,
+                    batch,
+                    section
                 )
             `)
             .eq('course_id', courseId);
@@ -29,16 +33,17 @@ const getCourseStudents = async (req, res) => {
 // --- CRUD ---
 
 const getStudents = async (req, res) => {
-    const { batch } = req.query;
+    const { batch, section } = req.query;
     try {
         let query = supabaseAdmin
             .from('students')
             .select('*')
+            .order('batch', { ascending: false })
+            .order('section', { ascending: true })
             .order('reg_no', { ascending: true });
 
-        if (batch) {
-            query = query.eq('batch', batch);
-        }
+        if (batch) query = query.eq('batch', batch);
+        if (section) query = query.eq('section', section);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -49,11 +54,11 @@ const getStudents = async (req, res) => {
 };
 
 const createStudent = async (req, res) => {
-    const { name, reg_no, email, batch } = req.body;
+    const { name, reg_no, email, batch, section, father_name, current_city } = req.body;
     try {
         const { data, error } = await supabaseAdmin
             .from('students')
-            .insert([{ name, reg_no, email, batch }])
+            .insert([{ name, reg_no, email, batch, section, father_name, current_city }])
             .select()
             .single();
 
@@ -66,11 +71,11 @@ const createStudent = async (req, res) => {
 
 const updateStudent = async (req, res) => {
     const { id } = req.params;
-    const { name, reg_no, email, batch } = req.body;
+    const { name, reg_no, email, batch, section, father_name, current_city } = req.body;
     try {
         const { data, error } = await supabaseAdmin
             .from('students')
-            .update({ name, reg_no, email, batch })
+            .update({ name, reg_no, email, batch, section, father_name, current_city })
             .eq('id', id)
             .select()
             .single();
@@ -134,13 +139,13 @@ const enrollStudents = async (req, res) => {
 const seedStudents = async (req, res) => {
     const { courseId } = req.params;
     try {
-        // 1. Create Dummy Students with Batch
+        // 1. Create Dummy Students with Batch and Section
         const dummyStudents = [
-            { name: "Ali Khan", reg_no: "2021-CS-001", email: "ali@example.com", batch: "2021 CS" },
-            { name: "Sara Ahmed", reg_no: "2021-CS-002", email: "sara@example.com", batch: "2021 CS" },
-            { name: "Bilal Raza", reg_no: "2021-CS-003", email: "bilal@example.com", batch: "2021 CS" },
-            { name: "Zainab Bibi", reg_no: "2021-CS-004", email: "zainab@example.com", batch: "2021 CS" },
-            { name: "Usman Ghani", reg_no: "2021-CS-005", email: "usman@example.com", batch: "2021 CS" }
+            { name: "Ali Khan", reg_no: "2021-CS-001", email: "ali@example.com", batch: "2021", section: "A", father_name: "Amjad Khan", current_city: "Lahore" },
+            { name: "Sara Ahmed", reg_no: "2021-CS-002", email: "sara@example.com", batch: "2021", section: "A", father_name: "Ahmed Ali", current_city: "Karachi" },
+            { name: "Bilal Raza", reg_no: "2021-CS-003", email: "bilal@example.com", batch: "2021", section: "B", father_name: "Raza Ullah", current_city: "Islamabad" },
+            { name: "Zainab Bibi", reg_no: "2021-CS-004", email: "zainab@example.com", batch: "2021", section: "B", father_name: "Muhammad Ali", current_city: "Faisalabad" },
+            { name: "Usman Ghani", reg_no: "2021-CS-005", email: "usman@example.com", batch: "2021", section: "A", father_name: "Ghani Khan", current_city: "Peshawar" }
         ];
 
         const { data: createdStudents, error: sError } = await supabaseAdmin
@@ -168,6 +173,43 @@ const seedStudents = async (req, res) => {
     }
 };
 
+const seedGlobalStudents = async (req, res) => {
+    try {
+        const dummyStudents = [];
+        const batches = ["2024", "2025"];
+        const sections = ["A", "B"];
+        let count = 1;
+
+        batches.forEach(batch => {
+            sections.forEach(section => {
+                for (let i = 1; i <= 5; i++) {
+                    const regNo = `${batch}-CS-${String(count).padStart(3, '0')}`;
+                    dummyStudents.push({
+                        name: `Student ${count}`,
+                        reg_no: regNo,
+                        email: `student${count}@example.com`,
+                        batch: batch,
+                        section: section,
+                        father_name: `Father ${count}`,
+                        current_city: i % 2 === 0 ? "Lahore" : "Islamabad"
+                    });
+                    count++;
+                }
+            });
+        });
+
+        const { data, error } = await supabaseAdmin
+            .from('students')
+            .upsert(dummyStudents, { onConflict: 'reg_no' })
+            .select();
+
+        if (error) throw error;
+        res.json({ message: `Seeded ${data.length} global students`, data });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getCourseStudents,
     getStudents,
@@ -176,5 +218,6 @@ module.exports = {
     deleteStudent,
     getBatches,
     enrollStudents,
-    seedStudents
+    seedStudents,
+    seedGlobalStudents
 };

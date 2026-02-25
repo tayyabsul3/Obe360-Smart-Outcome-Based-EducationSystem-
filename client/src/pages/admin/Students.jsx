@@ -1,333 +1,237 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Trash2, Pencil, Upload, Download, Loader2, Save } from 'lucide-react';
+import {
+    Users,
+    UserPlus,
+    Search,
+    Filter,
+    ArrowUpDown,
+    CheckCircle2,
+    Clock,
+    MoreHorizontal,
+    Trash2,
+    Database,
+    Loader2
+} from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { toast } from 'sonner';
-import Papa from 'papaparse';
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Students() {
     const [students, setStudents] = useState([]);
     const [batches, setBatches] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    const [selectedBatch, setSelectedBatch] = useState('All');
+    const [seeding, setSeeding] = useState(false);
 
-    // Dialogs
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [isEdit, setIsEdit] = useState(false);
-
-    // Form State
-    const [formData, setFormData] = useState({ id: null, name: '', reg_no: '', email: '', batch: '' });
-
-    // CSV Import
-    const fileInputRef = useRef(null);
-    const [importing, setImporting] = useState(false);
+    // Filters
+    const [selectedBatch, setSelectedBatch] = useState('ALL');
+    const [selectedSection, setSelectedSection] = useState('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
+        fetchStudents();
         fetchBatches();
-        fetchStudents();
-    }, []);
-
-    useEffect(() => {
-        fetchStudents();
-    }, [selectedBatch]);
-
-    const fetchBatches = async () => {
-        try {
-            const res = await fetch('http://localhost:5000/api/students/meta/batches');
-            if (res.ok) setBatches(await res.json());
-        } catch (error) {
-            console.error(error);
-        }
-    };
+    }, [selectedBatch, selectedSection]);
 
     const fetchStudents = async () => {
         setLoading(true);
         try {
             let url = 'http://localhost:5000/api/students';
-            if (selectedBatch && selectedBatch !== 'All') {
-                url += `?batch=${encodeURIComponent(selectedBatch)}`;
-            }
+            const params = new URLSearchParams();
+            if (selectedBatch !== 'ALL') params.append('batch', selectedBatch);
+            if (selectedSection !== 'ALL') params.append('section', selectedSection);
+            if (params.toString()) url += `?${params.toString()}`;
+
             const res = await fetch(url);
-            if (res.ok) {
-                setStudents(await res.json());
-            }
-        } catch (error) {
+            const data = await res.json();
+            setStudents(data);
+        } catch (err) {
+            console.error(err);
             toast.error("Failed to load students");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSave = async () => {
-        if (!formData.name || !formData.reg_no || !formData.batch) return toast.warning("Name, Reg No, and Batch are required");
-
-        const url = isEdit
-            ? `http://localhost:5000/api/students/${formData.id}`
-            : 'http://localhost:5000/api/students';
-
-        const method = isEdit ? 'PUT' : 'POST';
-
+    const fetchBatches = async () => {
         try {
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            if (res.ok) {
-                toast.success(isEdit ? "Student Updated" : "Student Created");
-                setIsCreateOpen(false);
-                fetchStudents();
-                fetchBatches(); // Refresh batches if new one added
-            } else {
-                const err = await res.json();
-                toast.error(err.error || "Operation failed");
-            }
-        } catch (error) {
-            toast.error("Network error");
-        }
+            const res = await fetch('http://localhost:5000/api/students/meta/batches');
+            const data = await res.json();
+            setBatches(data);
+        } catch (err) { console.error(err); }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm("Delete this student?")) return;
+    const handleSeedData = async () => {
+        setSeeding(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/students/${id}`, { method: 'DELETE' });
+            const res = await fetch('http://localhost:5000/api/students/seed-global', { method: 'POST' });
             if (res.ok) {
-                toast.success("Student Deleted");
-                fetchStudents();
-            }
-        } catch (error) {
-            toast.error("Failed to delete");
-        }
-    };
-
-    // CSV Import
-    const handleFileSelect = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setImporting(true);
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: async (results) => {
-                const rows = results.data;
-                if (rows.length === 0) {
-                    toast.error("Empty CSV");
-                    setImporting(false);
-                    return;
-                }
-
-                // Batch upload usually implies all students belong to ONE batch, or batch is in CSV
-                // User said: "dropdown where we will have batch and if user selects batch 2020 SE then we will list all..."
-                // User said: "upload from batch"
-                // Assuming CSV might NOT have batch column, and we ask user to apply a batch?
-                // Or CSV HAS batch column? 
-                // Let's assume CSV can have 'batch' column. If missing, we could prompt, but let's stick to CSV data for now.
-                // Actually, let's inject 'batch' from a prompt? 
-
-                // Keep it simple: CSV must have name, reg_no, email, batch.
-
-                let success = 0;
-                for (const row of rows) {
-                    if (!row.name || !row.reg_no || !row.batch) continue;
-
-                    try {
-                        await fetch('http://localhost:5000/api/students', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                name: row.name,
-                                reg_no: row.reg_no,
-                                email: row.email,
-                                batch: row.batch
-                            })
-                        });
-                        success++;
-                    } catch (e) { console.error(e); }
-                }
-
-                toast.success(`Imported ${success} students`);
-                setImporting(false);
+                toast.success("Dummy students seeded successfully!");
                 fetchStudents();
                 fetchBatches();
-                if (fileInputRef.current) fileInputRef.current.value = '';
+            } else {
+                toast.error("Failed to seed data");
             }
-        });
-    };
-
-    const downloadTemplate = () => {
-        const csv = "name,reg_no,email,batch\nJohn Doe,2023-CS-001,john@example.com,2023 CS\nJane Smith,2023-CS-002,jane@example.com,2023 CS";
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "students_template.csv";
-        a.click();
+        } catch (err) {
+            console.error(err);
+            toast.error("Network error");
+        } finally {
+            setSeeding(false);
+        }
     };
 
     const filteredStudents = students.filter(s =>
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
-        s.reg_no.toLowerCase().includes(search.toLowerCase())
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.reg_no.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
-        <div className="space-y-6 p-6 animate-in fade-in">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Student Management</h1>
-                    <p className="text-muted-foreground">Manage student records and batches.</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={downloadTemplate} title="Download CSV Template">
-                        <Download size={16} className="mr-2" /> Template
-                    </Button>
-                    <div className="relative">
-                        <Button variant="outline" disabled={importing}>
-                            {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                            Batch Upload
-                        </Button>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            accept=".csv"
-                            onChange={handleFileSelect}
-                            disabled={importing}
-                        />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-6 bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100">
+                <div className="flex items-center gap-6">
+                    <div className="h-16 w-16 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-blue-200 shrink-0">
+                        <Users size={32} />
                     </div>
-                    <Button onClick={() => {
-                        setFormData({ id: null, name: '', reg_no: '', email: '', batch: '' });
-                        setIsEdit(false);
-                        setIsCreateOpen(true);
-                    }}>
-                        <Plus size={16} className="mr-2" /> Add Student
+                    <div className="space-y-1">
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Student Directory</h1>
+                        <p className="text-sm text-slate-500 font-medium">Manage and organize students by academic batch and section.</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        onClick={handleSeedData}
+                        disabled={seeding}
+                        className="h-12 px-6 rounded-2xl border-slate-200 text-slate-600 font-bold gap-2 hover:bg-slate-50"
+                    >
+                        {seeding ? <Loader2 className="animate-spin" size={18} /> : <Database size={18} />}
+                        Seed Dummy Data
+                    </Button>
+                    <Button className="h-12 px-8 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 shadow-lg shadow-blue-200">
+                        <UserPlus size={18} /> Add Student
                     </Button>
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex justify-between items-center bg-white p-4 rounded-lg border shadow-sm">
+            {/* Controls Bar */}
+            <div className="flex flex-col md:flex-row items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-50">
+                <div className="relative flex-1 group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <Input
+                        placeholder="Search by name or registration number..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-12 pl-12 rounded-2xl bg-slate-50 border-0 focus-visible:ring-2 focus-visible:ring-blue-500/20 font-medium"
+                    />
+                </div>
+
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Batch:</span>
-                        <Select value={selectedBatch} onValueChange={setSelectedBatch}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter by Batch" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="All">All Batches</SelectItem>
-                                {batches.map(b => (
-                                    <SelectItem key={b} value={b}>{b}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="relative w-64">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by name or reg no..."
-                            className="pl-8"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                    </div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                    Showing {filteredStudents.length} students
+                    <Select value={selectedBatch} onValueChange={setSelectedBatch}>
+                        <SelectTrigger className="h-12 w-[180px] rounded-2xl bg-slate-50 border-0 shadow-none font-bold text-slate-700">
+                            <SelectValue placeholder="Batch" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                            <SelectItem value="ALL" className="font-bold">All Batches</SelectItem>
+                            {batches.map(b => (
+                                <SelectItem key={b} value={b} className="font-bold">Batch {b}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={selectedSection} onValueChange={setSelectedSection}>
+                        <SelectTrigger className="h-12 w-[140px] rounded-2xl bg-slate-50 border-0 shadow-none font-bold text-slate-700">
+                            <SelectValue placeholder="Section" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                            <SelectItem value="ALL" className="font-bold">All Sections</SelectItem>
+                            <SelectItem value="A" className="font-bold">Section A</SelectItem>
+                            <SelectItem value="B" className="font-bold">Section B</SelectItem>
+                            <SelectItem value="C" className="font-bold">Section C</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+            {/* Students Table */}
+            <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden bg-white">
                 <Table>
-                    <TableHeader>
-                        <TableRow className="bg-slate-50">
-                            <TableHead>Reg No</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Batch</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                    <TableHeader className="bg-slate-50/50">
+                        <TableRow className="hover:bg-transparent border-slate-100">
+                            <TableHead className="w-[100px] font-black text-slate-400 uppercase tracking-widest text-[10px] pl-8">#</TableHead>
+                            <TableHead className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Student Info</TableHead>
+                            <TableHead className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Registration No</TableHead>
+                            <TableHead className="font-black text-slate-400 uppercase tracking-widest text-[10px]">Organization</TableHead>
+                            <TableHead className="font-black text-slate-400 uppercase tracking-widest text-[10px] text-right pr-8">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">Loading...</TableCell>
-                            </TableRow>
+                            [1, 2, 3, 4, 5].map(i => (
+                                <TableRow key={i}>
+                                    <TableCell colSpan={5} className="p-4"><Skeleton className="h-16 w-full rounded-2xl" /></TableCell>
+                                </TableRow>
+                            ))
                         ) : filteredStudents.length > 0 ? (
-                            filteredStudents.map((student) => (
-                                <TableRow key={student.id} className="hover:bg-slate-50">
-                                    <TableCell className="font-mono text-xs font-medium">{student.reg_no}</TableCell>
-                                    <TableCell>{student.name}</TableCell>
-                                    <TableCell className="text-muted-foreground">{student.email}</TableCell>
+                            filteredStudents.map((student, idx) => (
+                                <TableRow key={student.id} className="group hover:bg-blue-50/30 border-slate-50 transition-colors">
+                                    <TableCell className="font-black text-slate-300 pl-8">{String(idx + 1).padStart(2, '0')}</TableCell>
                                     <TableCell>
-                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                            {student.batch}
-                                        </span>
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                {student.name.charAt(0)}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-slate-800">{student.name}</span>
+                                                <span className="text-xs text-slate-400 font-medium">{student.email || 'No email provided'}</span>
+                                            </div>
+                                        </div>
                                     </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => {
-                                            setFormData(student);
-                                            setIsEdit(true);
-                                            setIsCreateOpen(true);
-                                        }}>
-                                            <Pencil size={14} className="text-slate-500 hover:text-blue-600" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDelete(student.id)}>
-                                            <Trash2 size={14} className="text-slate-500 hover:text-red-600" />
+                                    <TableCell>
+                                        <Badge variant="outline" className="rounded-lg font-mono font-bold text-[11px] bg-slate-50 border-slate-200 text-slate-600 px-3 py-1">
+                                            {student.reg_no}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-slate-800 tracking-tight">Batch {student.batch || 'N/A'}</span>
+                                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Section {student.section || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right pr-8">
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-md hover:text-red-600 transition-all opacity-0 group-hover:opacity-100">
+                                            <Trash2 size={18} />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                                    No students found.
+                                <TableCell colSpan={5} className="py-20 text-center">
+                                    <div className="h-20 w-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                                        <Users size={32} className="text-slate-200" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-slate-800">No Students Found</h3>
+                                    <p className="text-slate-500 font-medium max-w-xs mx-auto mt-2">No student records match your current filters. Try adjusting your search or seeting dummy data.</p>
                                 </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
-            </div>
-
-            {/* Create/Edit Modal */}
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{isEdit ? 'Edit Student' : 'Add New Student'}</DialogTitle>
-                        <DialogDescription>Enter student details below.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="grid gap-2">
-                            <label className="text-sm font-medium">Full Name</label>
-                            <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <label className="text-sm font-medium">Reg No</label>
-                                <Input value={formData.reg_no} onChange={e => setFormData({ ...formData, reg_no: e.target.value })} placeholder="2023-CS-001" />
-                            </div>
-                            <div className="grid gap-2">
-                                <label className="text-sm font-medium">Batch</label>
-                                <Input value={formData.batch} onChange={e => setFormData({ ...formData, batch: e.target.value })} placeholder="2023 CS" />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <label className="text-sm font-medium">Email</label>
-                            <Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} type="email" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSave}><Save size={16} className="mr-2" /> Save</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            </Card>
         </div>
     );
 }

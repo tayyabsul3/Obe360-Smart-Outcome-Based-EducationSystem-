@@ -2,6 +2,8 @@ import MyCourses from './MyCourses';
 import CLOManager from './CLOManager';
 import AssessmentManager from './AssessmentManager';
 import Gradebook from './Gradebook';
+import PLOMapping from './PLOMapping';
+
 
 // Placeholders for future modules
 const OBEMapping = () => <div className="p-4">OBE Mapping Module (Coming Soon)</div>;
@@ -16,8 +18,8 @@ export {
     AssessmentManager,
     Gradebook,
     Students, // Added
+    PLOMapping,
     OBEMapping,
-    Analytics,
     Gamification,
     Feedback
 };

@@ -2,13 +2,19 @@ const supabaseAdmin = require('../config/supabase');
 
 // --- Assignments ---
 
+// --- Semester Assignments ---
+
 const getAssignments = async (req, res) => {
-    const { classId } = req.params;
+    const { programId, semesterId } = req.query;
     try {
-        const { data, error } = await supabaseAdmin
-            .from('course_assignments')
-            .select('*, course:courses(*), teacher:profiles(*)')
-            .eq('class_id', classId);
+        let query = supabaseAdmin
+            .from('semester_assignments')
+            .select('*, course:courses(*), teacher:profiles(*)');
+
+        if (programId) query = query.eq('program_id', programId);
+        if (semesterId) query = query.eq('semester_id', semesterId);
+
+        const { data, error } = await query;
 
         if (error) throw error;
         res.json(data);
@@ -18,20 +24,20 @@ const getAssignments = async (req, res) => {
 };
 
 const createAssignment = async (req, res) => {
-    const { class_id, course_id, teacher_id } = req.body;
+    const { course_id, teacher_id, program_id, semester_id, semester_number } = req.body;
     try {
-        // Check if assignment already exists
+        // Check if assignment already exists for this course in this program/semester/session
         const { data: existing } = await supabaseAdmin
-            .from('course_assignments')
+            .from('semester_assignments')
             .select('*')
-            .match({ class_id, course_id })
-            .single();
+            .match({ course_id, program_id, semester_id })
+            .maybeSingle();
 
         if (existing) {
             // Update teacher if already exists
             const { data, error } = await supabaseAdmin
-                .from('course_assignments')
-                .update({ teacher_id })
+                .from('semester_assignments')
+                .update({ teacher_id, semester_number })
                 .eq('id', existing.id)
                 .select()
                 .single();
@@ -40,8 +46,8 @@ const createAssignment = async (req, res) => {
         }
 
         const { data, error } = await supabaseAdmin
-            .from('course_assignments')
-            .insert([{ class_id, course_id, teacher_id }])
+            .from('semester_assignments')
+            .insert([{ course_id, teacher_id, program_id, semester_id, semester_number }])
             .select()
             .single();
 
@@ -54,15 +60,35 @@ const createAssignment = async (req, res) => {
 
 const getTeacherAssignments = async (req, res) => {
     const { teacherId } = req.params;
+    const { semesterId } = req.query; // Academic Session (Working Semester)
     try {
-        const { data, error } = await supabaseAdmin
-            .from('course_assignments')
+        let query = supabaseAdmin
+            .from('semester_assignments')
             .select(`
                 *,
                 course:courses(*),
-                class:classes(*)
+                program:programs(*)
             `)
             .eq('teacher_id', teacherId);
+
+        if (semesterId) {
+            query = query.eq('semester_id', semesterId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllAssignments = async (req, res) => {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('semester_assignments')
+            .select('*, course:courses(*), teacher:profiles(*), program:programs(*), semester:semesters(*)');
 
         if (error) throw error;
         res.json(data);
@@ -74,5 +100,6 @@ const getTeacherAssignments = async (req, res) => {
 module.exports = {
     getAssignments,
     createAssignment,
-    getTeacherAssignments
+    getTeacherAssignments,
+    getAllAssignments
 };

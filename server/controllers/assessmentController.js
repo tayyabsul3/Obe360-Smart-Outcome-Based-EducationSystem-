@@ -19,12 +19,12 @@ const getAssessments = async (req, res) => {
 };
 
 const createAssessment = async (req, res) => {
-    const { course_id, title, type, drive_link } = req.body;
-    console.log("Create Assessment Request:", { course_id, title, type, drive_link });
+    const { course_id, title, type, description, drive_link } = req.body;
+    console.log("Create Assessment Request:", { course_id, title, type, description, drive_link });
     try {
         const { data, error } = await supabaseAdmin
             .from('assessments')
-            .insert([{ course_id, title, type, drive_link }])
+            .insert([{ course_id, title, type, description, drive_link }])
             .select()
             .single();
 
@@ -110,6 +110,24 @@ const createQuestions = async (req, res) => {
 
 // --- Marks ---
 
+const getMarks = async (req, res) => {
+    const { assessmentId } = req.params;
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('student_marks')
+            .select(`
+                *,
+                assessment_questions!inner(assessment_id)
+            `)
+            .eq('assessment_questions.assessment_id', assessmentId);
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
 const saveMarks = async (req, res) => {
     const { updates } = req.body; // Array of { student_id, question_id, obtained_marks }
 
@@ -133,5 +151,6 @@ module.exports = {
     deleteAssessment,
     getQuestions,
     createQuestions,
+    getMarks,
     saveMarks
 };

@@ -1,28 +1,23 @@
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import Header from './Header';
+import AdminSidebar from './AdminSidebar';
+import AdminHeader from './AdminHeader';
 
-export default function MainLayout() {
+export default function AdminRootLayout() {
     return (
         <div className="flex h-screen bg-[#F4F7F9] overflow-hidden font-sans">
-            {/* Sidebar (Includes both Primary & Secondary) */}
-            <Sidebar />
+            <AdminSidebar />
 
-            {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Header (Includes both Main & Nav Bar) */}
-                <Header />
+                <AdminHeader />
 
-                {/* Page Content */}
                 <main className="flex-1 overflow-y-auto">
                     <div className="p-6">
                         <Outlet />
                     </div>
                 </main>
 
-                {/* Footer / Status Bar (Optional) */}
                 <footer className="h-6 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    <span>Qobe v2.0 - Outcome Based Education System</span>
+                    <span>Qobe Admin v2.0 - Management Console</span>
                     <span>System Time: {new Date().toLocaleTimeString()}</span>
                 </footer>
             </div>

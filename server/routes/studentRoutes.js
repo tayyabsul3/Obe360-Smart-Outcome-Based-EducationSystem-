@@ -10,6 +10,7 @@ router.post('/:courseId/enroll', controller.enrollStudents);
 // 2. Student Management (Admin)
 router.get('/', controller.getStudents); // ?batch=...
 router.post('/', controller.createStudent);
+router.post('/seed-global', controller.seedGlobalStudents);
 router.put('/:id', controller.updateStudent);
 router.delete('/:id', controller.deleteStudent);
 

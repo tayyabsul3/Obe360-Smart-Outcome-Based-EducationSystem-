@@ -12,6 +12,7 @@ router.get('/:assessmentId/questions', controller.getQuestions);
 router.post('/:assessmentId/questions', controller.createQuestions);
 
 // Marks
+router.get('/:assessmentId/marks', controller.getMarks);
 router.post('/marks', controller.saveMarks);
 
 module.exports = router;
