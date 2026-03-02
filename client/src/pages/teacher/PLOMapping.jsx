@@ -40,11 +40,11 @@ export default function PLOMapping() {
         setLoading(true);
         try {
             // Fetch Batches
-            const bRes = await fetch('http://localhost:5000/api/students/batches');
+            const bRes = await fetch('/api/students/batches');
             if (bRes.ok) setBatches(await bRes.json());
 
             // Fetch PLOs for this course
-            const pRes = await fetch(`http://localhost:5000/api/programs/plos/course/${courseId}`);
+            const pRes = await fetch(`/api/programs/plos/course/${courseId}`);
             if (pRes.ok) setPlos(await pRes.json());
         } catch (error) {
             console.error(error);
@@ -58,7 +58,7 @@ export default function PLOMapping() {
 
         showLoader();
         try {
-            const res = await fetch('http://localhost:5000/api/clos/map', {
+            const res = await fetch('/api/clos/map', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

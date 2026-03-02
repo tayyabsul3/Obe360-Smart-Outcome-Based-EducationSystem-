@@ -122,7 +122,7 @@ export default function Programs() {
 
     const fetchAllCourses = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/courses');
+            const res = await fetch('/api/courses');
             const data = await res.json();
             setAllCourses(data);
         } catch (error) {
@@ -133,7 +133,7 @@ export default function Programs() {
     const fetchStudyPlan = async (programId) => {
         setSpLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/courses/program/${programId}`);
+            const res = await fetch(`/api/courses/program/${programId}`);
             if (res.ok) {
                 const data = await res.json();
                 setStudyPlan(data);
@@ -151,7 +151,7 @@ export default function Programs() {
 
         setAssigningCourse(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/courses/program/assign`, {
+            const res = await fetch(`/api/courses/program/assign`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -179,7 +179,7 @@ export default function Programs() {
 
     const handleRemoveFromStudyPlan = async (mappingId) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/courses/program/unassign/${mappingId}`, {
+            const res = await fetch(`/api/courses/program/unassign/${mappingId}`, {
                 method: 'DELETE'
             });
 
@@ -198,7 +198,7 @@ export default function Programs() {
     const fetchPrograms = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/programs');
+            const res = await fetch('/api/programs');
             const data = await res.json();
             setPrograms(data);
         } catch (error) {
@@ -212,7 +212,7 @@ export default function Programs() {
     const fetchPLOs = async (programId) => {
         setPloLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/programs/${programId}/plos`);
+            const res = await fetch(`/api/programs/${programId}/plos`);
             if (res.ok) {
                 const data = await res.json();
                 setPlos(data);
@@ -250,11 +250,11 @@ export default function Programs() {
         try {
             let res;
             if (deleteContext.type === 'PROGRAM') {
-                res = await fetch(`http://localhost:5000/api/programs/${deleteContext.id}`, { method: 'DELETE' });
+                res = await fetch(`/api/programs/${deleteContext.id}`, { method: 'DELETE' });
             } else if (deleteContext.type === 'PLO') {
-                res = await fetch(`http://localhost:5000/api/plos/${deleteContext.id}`, { method: 'DELETE' });
+                res = await fetch(`/api/plos/${deleteContext.id}`, { method: 'DELETE' });
             } else if (deleteContext.type === 'PLO_BULK') {
-                res = await fetch(`http://localhost:5000/api/plos/bulk-delete`, {
+                res = await fetch(`/api/plos/bulk-delete`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ids: deleteContext.ids })
@@ -299,7 +299,7 @@ export default function Programs() {
 
         try {
             if (type === 'PROGRAM') {
-                const res = await fetch(`http://localhost:5000/api/programs/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/programs/${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     toast.success("Program deleted");
                     fetchPrograms();
@@ -307,7 +307,7 @@ export default function Programs() {
                     toast.error("Failed to delete program");
                 }
             } else if (type === 'PLO') {
-                const res = await fetch(`http://localhost:5000/api/programs/plos/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/programs/plos/${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     toast.success("PLO Deleted");
                     if (selectedProgram) fetchPLOs(selectedProgram.id);
@@ -315,7 +315,7 @@ export default function Programs() {
             } else if (type === 'PLO_BULK') {
                 // Simulate bulk delete by calling delete endpoint for each ID (Promise.all)
                 // Ideally backend should support bulk delete, but loop works for now
-                const promises = ids.map(pid => fetch(`http://localhost:5000/api/programs/plos/${pid}`, { method: 'DELETE' }));
+                const promises = ids.map(pid => fetch(`/api/programs/plos/${pid}`, { method: 'DELETE' }));
                 await Promise.all(promises);
                 toast.success("Selected PLOs deleted");
                 setSelectedPlos([]);
@@ -333,8 +333,8 @@ export default function Programs() {
         e.preventDefault();
         showLoader();
         const url = isEditingProgram
-            ? `http://localhost:5000/api/programs/${editingProgramId}`
-            : 'http://localhost:5000/api/programs';
+            ? `/api/programs/${editingProgramId}`
+            : '/api/programs';
 
         const method = isEditingProgram ? 'PUT' : 'POST';
 
@@ -370,7 +370,7 @@ export default function Programs() {
         setCreatingPlo(true);
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/programs/plos`, {
+            const res = await fetch(`/api/programs/plos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -405,7 +405,7 @@ export default function Programs() {
     const saveEditPlo = async () => {
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/programs/plos/${editingPloId}`, {
+            const res = await fetch(`/api/programs/plos/${editingPloId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -534,15 +534,15 @@ export default function Programs() {
             let body = {};
 
             if (importType === 'PROGRAM') {
-                url = 'http://localhost:5000/api/programs/bulk';
+                url = '/api/programs/bulk';
                 body = { programs: payload.map(p => ({ title: p.title, code: p.code, duration_years: parseInt(p.duration_years) || 4 })) };
             }
             else if (importType === 'STUDY_PLAN') {
-                url = 'http://localhost:5000/api/courses/study-plan/bulk';
+                url = '/api/courses/study-plan/bulk';
                 body = { items: payload };
             }
             else if (importType === 'PLO') {
-                url = 'http://localhost:5000/api/programs/plos/bulk';
+                url = '/api/programs/plos/bulk';
                 body = { program_id: selectedProgram?.id, plos: payload };
             }
 

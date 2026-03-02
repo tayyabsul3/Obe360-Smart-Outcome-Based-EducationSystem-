@@ -71,7 +71,7 @@ export default function Courses() {
     const fetchCourses = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/courses');
+            const res = await fetch('/api/courses');
             const data = await res.json();
             if (Array.isArray(data)) {
                 setCourses(data);
@@ -96,7 +96,7 @@ export default function Courses() {
         e.preventDefault();
         const payload = { title, code, credit_hours: creditHours, lab_hours: labHours };
         const method = isEditing ? 'PUT' : 'POST';
-        const url = isEditing ? `http://localhost:5000/api/courses/${editingCourseId}` : 'http://localhost:5000/api/courses';
+        const url = isEditing ? `/api/courses/${editingCourseId}` : '/api/courses';
 
         try {
             const res = await fetch(url, {
@@ -144,7 +144,7 @@ export default function Courses() {
 
     const executeDelete = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/courses/${deleteContext.id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/courses/${deleteContext.id}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success(`${deleteContext.title} purged from catalog`);
                 fetchCourses();
@@ -211,7 +211,7 @@ export default function Courses() {
         setImporting(true);
         try {
             const payload = parsedData.map(({ isValid, ...rest }) => rest);
-            const res = await fetch('http://localhost:5000/api/courses/bulk', {
+            const res = await fetch('/api/courses/bulk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ courses: payload })

@@ -44,8 +44,8 @@ export default function CLOAttainmentGraph() {
         setLoading(true);
         try {
             const [closRes, dataRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/clos/${courseId}`),
-                fetch(`http://localhost:5000/api/assessments/course/${courseId}/export-all`)
+                fetch(`/api/clos/${courseId}`),
+                fetch(`/api/assessments/course/${courseId}/export-all`)
             ]);
 
             if (closRes.ok) setClos(await closRes.json());

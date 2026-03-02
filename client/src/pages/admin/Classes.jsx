@@ -28,7 +28,7 @@ export default function Classes() {
     const fetchClasses = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/classes');
+            const res = await fetch('/api/classes');
             const data = await res.json();
             setClasses(data);
         } catch (error) {
@@ -40,7 +40,7 @@ export default function Classes() {
 
     const fetchPrograms = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/programs');
+            const res = await fetch('/api/programs');
             const data = await res.json();
             setPrograms(data);
         } catch (err) { console.error(err) }
@@ -55,7 +55,7 @@ export default function Classes() {
         const name = `${selectedProgram.code}-${semester}${section}`;
 
         try {
-            const res = await fetch('http://localhost:5000/api/classes', {
+            const res = await fetch('/api/classes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

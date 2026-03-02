@@ -36,7 +36,7 @@ export default function MyCourses() {
     const fetchCourseDetails = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`http://localhost:5000/api/courses/${activeCourseId}`);
+            const res = await fetch(`/api/courses/${activeCourseId}`);
             if (res.ok) {
                 const data = await res.json();
                 setCourseDetails(data);

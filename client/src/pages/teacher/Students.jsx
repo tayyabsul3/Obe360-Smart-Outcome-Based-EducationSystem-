@@ -55,7 +55,7 @@ export default function Students() {
     const fetchEnrolledStudents = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/students/${courseId}`);
+            const res = await fetch(`/api/students/${courseId}`);
             if (res.ok) setEnrolledStudents(await res.json());
         } catch (error) {
             console.error(error);
@@ -66,7 +66,7 @@ export default function Students() {
 
     const fetchBatches = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/students/meta/batches');
+            const res = await fetch('/api/students/meta/batches');
             if (res.ok) setBatches(await res.json());
         } catch (error) {
             console.error(error);
@@ -78,7 +78,7 @@ export default function Students() {
         setBatchStudents([]);
         setSelectedStudents([]);
         try {
-            const res = await fetch(`http://localhost:5000/api/students?batch=${encodeURIComponent(batch)}`);
+            const res = await fetch(`/api/students?batch=${encodeURIComponent(batch)}`);
             if (res.ok) setBatchStudents(await res.json());
         } catch (error) {
             toast.error("Failed to load batch students");
@@ -109,7 +109,7 @@ export default function Students() {
 
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/students/${courseId}/enroll`, {
+            const res = await fetch(`/api/students/${courseId}/enroll`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studentIds: selectedStudents })

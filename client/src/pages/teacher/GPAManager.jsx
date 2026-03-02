@@ -38,8 +38,8 @@ export default function GPAManager() {
         setLoading(true);
         try {
             const [cRes, mRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/courses/${courseId}`),
-                fetch(`http://localhost:5000/api/assessments/course/${courseId}/export-all`)
+                fetch(`/api/courses/${courseId}`),
+                fetch(`/api/assessments/course/${courseId}/export-all`)
             ]);
 
             if (cRes.ok) setCourse(await cRes.json());

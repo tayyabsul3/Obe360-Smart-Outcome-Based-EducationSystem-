@@ -40,8 +40,8 @@ export default function OBEMarks() {
         setLoading(true);
         try {
             const [exportRes, closRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/assessments/course/${courseId}/export-all`),
-                fetch(`http://localhost:5000/api/clos/${courseId}`)
+                fetch(`/api/assessments/course/${courseId}/export-all`),
+                fetch(`/api/clos/${courseId}`)
             ]);
 
             const exportData = exportRes.ok ? await exportRes.json() : { assessments: [], marks: [], enrollments: [] };

@@ -68,7 +68,7 @@ export default function Assignments() {
 
     const fetchTeachers = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/teachers');
+            const res = await fetch('/api/teachers');
             const data = await res.json();
             setTeachers(data);
         } catch (err) { console.error(err); }
@@ -76,7 +76,7 @@ export default function Assignments() {
 
     const fetchPrograms = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/programs');
+            const res = await fetch('/api/programs');
             const data = await res.json();
             setPrograms(data);
             if (data.length > 0) setSelectedProgramId(data[0].id);
@@ -87,11 +87,11 @@ export default function Assignments() {
         try {
             setLoading(true);
             // 1. Fetch study plan courses for this program
-            const spRes = await fetch(`http://localhost:5000/api/courses/program/${selectedProgramId}`);
+            const spRes = await fetch(`/api/courses/program/${selectedProgramId}`);
             const spData = await spRes.json();
 
             // 2. Fetch current assignments for this program and academic session
-            const assignRes = await fetch(`http://localhost:5000/api/assignments/filter?programId=${selectedProgramId}&semesterId=${workingSemesterId}`);
+            const assignRes = await fetch(`/api/assignments/filter?programId=${selectedProgramId}&semesterId=${workingSemesterId}`);
             const assignData = await assignRes.json();
 
             setProgramCourses(spData);
@@ -105,7 +105,7 @@ export default function Assignments() {
 
     const handleAssign = async (courseId, teacherId, semesterNum) => {
         try {
-            const res = await fetch('http://localhost:5000/api/assignments', {
+            const res = await fetch('/api/assignments', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

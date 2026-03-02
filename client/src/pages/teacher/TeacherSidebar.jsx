@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
     BookOpen,
     FileText,
@@ -64,7 +64,7 @@ export default function TeacherSidebar() {
     const fetchAssignedCourses = async () => {
         try {
             // Fetch ALL assignments for this teacher to be resilient to session mismatches
-            const res = await fetch(`http://localhost:5000/api/assignments/teacher/${user.id}`);
+            const res = await fetch(`/api/assignments/teacher/${user.id}`);
             if (res.ok) {
                 const data = await res.json();
 
@@ -113,27 +113,6 @@ export default function TeacherSidebar() {
             ]
         },
         {
-            label: 'PLOs',
-            icon: Target,
-            isAccordion: true,
-            value: "plos",
-            subItems: [
-                { label: 'PLOs Attainment', to: `/teacher/course/${activeCourseId}/plos/attainment` },
-                { label: 'PLO Attainment Graph', to: `/teacher/course/${activeCourseId}/plos/attainment-graph` },
-            ]
-        },
-        {
-            label: 'Reports',
-            icon: BarChart,
-            isAccordion: true,
-            value: "reports",
-            subItems: [
-                { label: 'Consolidated Report', to: `/teacher/course/${activeCourseId}/reports/consolidated` },
-                { label: 'Course Breadth', to: `/teacher/course/${activeCourseId}/reports/breadth` },
-                { label: 'GPA Attainment Graph', to: `/teacher/course/${activeCourseId}/reports/gpa-graph` },
-            ]
-        },
-        {
             label: 'Assesment / Marks',
             icon: CheckSquare,
             isAccordion: true,
@@ -145,10 +124,47 @@ export default function TeacherSidebar() {
                 { label: 'Award List', to: `/teacher/course/${activeCourseId}/assessments/award-list` },
             ]
         },
-        { label: 'Activity Weights', to: `/teacher/course/${activeCourseId}/activity-weights`, icon: Weight },
         { label: 'Students', to: `/teacher/course/${activeCourseId}/students`, icon: Users },
-        { label: 'Course Contents', to: `/teacher/course/${activeCourseId}/contents`, icon: Layers },
+        {
+            label: 'Reports',
+            icon: BarChart,
+            isAccordion: true,
+            value: "reports",
+            subItems: [
+                { label: 'PLO Report', to: `/teacher/course/${activeCourseId}/reports/plo` },
+                { label: 'Consolidated Report', to: `/teacher/course/${activeCourseId}/reports/consolidated` },
+                { label: 'Course Breadth', to: `/teacher/course/${activeCourseId}/reports/breadth` },
+                { label: 'GPA Attainment Graph', to: `/teacher/course/${activeCourseId}/reports/gpa-graph` },
+            ]
+        }
     ];
+
+    const location = useLocation();
+    const [activeAccordion, setActiveAccordion] = useState("");
+
+    // Keep accordion synced with URL on load/refresh
+    useEffect(() => {
+        if (!activeCourseId) return;
+        const currentPath = location.pathname;
+        const activeItem = contextNavItems.find(item =>
+            item.isAccordion && item.subItems.some(sub => currentPath.includes(sub.to))
+        );
+        if (activeItem) {
+            setActiveAccordion(activeItem.value);
+        } else {
+            setActiveAccordion("");
+        }
+    }, [location.pathname, activeCourseId]);
+
+    const handleAccordionChange = (val) => {
+        setActiveAccordion(val);
+        if (val) {
+            const item = contextNavItems.find(i => i.value === val);
+            if (item && item.subItems.length > 0) {
+                navigate(item.subItems[0].to);
+            }
+        }
+    };
 
     return (
         <aside
@@ -166,7 +182,7 @@ export default function TeacherSidebar() {
                     <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Course Context</h3>
                     {activeCourseId ? (
                         <nav className="space-y-0.5">
-                            <Accordion type="multiple" className="w-full space-y-0.5" defaultValue={[]}>
+                            <Accordion type="single" collapsible className="w-full space-y-0.5" value={activeAccordion} onValueChange={handleAccordionChange}>
                                 {contextNavItems.map((item) => (
                                     item.isAccordion ? (
                                         <AccordionItem value={item.value} key={item.value} className="border-none">

@@ -25,27 +25,11 @@ import AdminRootLayout from '@/pages/admin/AdminRootLayout';
 
 // Teacher Pages
 import {
-  MyCourses,
-  OBEMapping,
-  Gradebook,
-  Gamification,
-  Feedback,
-  CLOManager,
-  AssessmentManager,
-  Students,
-  PLOMapping,
-  AwardList,
-  GPAManager,
-  CLOAttainment,
-  CLOAttainmentGraph,
-  PLOAttainment,
-  PLOAttainmentGraph,
-  PLORecommendations,
-  ConsolidatedReport,
-  CourseBreadth,
-  GPAAttainmentGraph,
-  OBEMarks
-} from '@/pages/teacher/TeacherPages';
+  PLOMapping, Students,
+  AwardList, GPAManager, PLOReport,
+  ConsolidatedReport, CourseBreadth, GPAAttainmentGraph,
+  CLOAttainment, CLOAttainmentGraph, MyCourses, CLOManager, OBEMarks, AssessmentManager, Gradebook, Gamification, Feedback
+} from './pages/teacher/TeacherPages';
 import TeacherRootLayout from '@/pages/teacher/TeacherRootLayout';
 import TeacherCourseLayout from '@/pages/teacher/TeacherCourseLayout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -155,10 +139,11 @@ function App() {
               <Route path="clos/attainment" element={<CLOAttainment />} />
               <Route path="clos/attainment-graph" element={<CLOAttainmentGraph />} />
 
-              {/* PLO Module */}
-              <Route path="plos/attainment" element={<PLOAttainment />} />
-              <Route path="plos/attainment-graph" element={<PLOAttainmentGraph />} />
-              <Route path="plos/recommendations" element={<PLORecommendations />} />
+              {/* Report Features */}
+              <Route path="reports/plo" element={<PLOReport />} />
+              <Route path="reports/consolidated" element={<ConsolidatedReport />} />
+              <Route path="reports/breadth" element={<CourseBreadth />} />
+              <Route path="reports/gpa-graph" element={<GPAAttainmentGraph />} />
 
               {/* Assessments Module */}
               <Route path="assessments" element={<AssessmentManager />} />
@@ -168,11 +153,6 @@ function App() {
 
               {/* Students Module */}
               <Route path="students" element={<Students />} />
-
-              {/* Reports Module */}
-              <Route path="reports/consolidated" element={<ConsolidatedReport />} />
-              <Route path="reports/breadth" element={<CourseBreadth />} />
-              <Route path="reports/gpa-graph" element={<GPAAttainmentGraph />} />
 
               {/* Other Routes */}
               <Route path="activity-weights" element={<div className="p-4 bg-white rounded shadow-sm">Activity Weights coming soon</div>} />

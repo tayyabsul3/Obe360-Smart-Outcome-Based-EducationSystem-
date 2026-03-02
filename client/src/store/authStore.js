@@ -40,7 +40,7 @@ const useAuthStore = create((set) => ({
 
     login: async (email, password) => {
         try {
-            const response = await fetch('http://localhost:5000/api/login', {
+            const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -74,7 +74,7 @@ const useAuthStore = create((set) => ({
 
     register: async (email, password, fullName) => {
         try {
-            const response = await fetch('http://localhost:5000/api/register', {
+            const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -93,7 +93,7 @@ const useAuthStore = create((set) => ({
 
     inviteTeacher: async (email, fullName, invitedBy) => {
         try {
-            const response = await fetch('http://localhost:5000/api/invite', {
+            const response = await fetch('/api/invite', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -112,7 +112,7 @@ const useAuthStore = create((set) => ({
 
     updatePassword: async (userId, newPassword) => {
         try {
-            const response = await fetch('http://localhost:5000/api/update-password', {
+            const response = await fetch('/api/update-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -20,7 +20,7 @@ const useSemesterStore = create(
 
             fetchPrograms: async () => {
                 try {
-                    const res = await fetch('http://localhost:5000/api/programs');
+                    const res = await fetch('/api/programs');
                     if (res.ok) {
                         const data = await res.json();
                         set({ programs: data });
@@ -39,7 +39,7 @@ const useSemesterStore = create(
 
             fetchSemesters: async () => {
                 try {
-                    const res = await fetch('http://localhost:5000/api/semesters');
+                    const res = await fetch('/api/semesters');
                     if (res.ok) {
                         const data = await res.json();
                         set({ semesters: data });

@@ -27,10 +27,10 @@ export default function PLOAttainment() {
         setLoading(true);
         try {
             const [cRes, mRes, pRes, clRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/courses/${courseId}`),
-                fetch(`http://localhost:5000/api/assessments/course/${courseId}/export-all`),
-                fetch(`http://localhost:5000/api/plos`),
-                fetch(`http://localhost:5000/api/clos/course/${courseId}`)
+                fetch(`/api/courses/${courseId}`),
+                fetch(`/api/assessments/course/${courseId}/export-all`),
+                fetch(`/api/plos`),
+                fetch(`/api/clos/course/${courseId}`)
             ]);
 
             if (cRes.ok) setCourse(await cRes.json());

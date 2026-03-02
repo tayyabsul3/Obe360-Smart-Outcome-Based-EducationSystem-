@@ -38,8 +38,8 @@ export default function Gradebook() {
         setLoading(true);
         try {
             const [sRes, aRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/students/${courseId}`),
-                fetch(`http://localhost:5000/api/assessments/${courseId}`)
+                fetch(`/api/students/${courseId}`),
+                fetch(`/api/assessments/${courseId}`)
             ]);
 
             if (sRes.ok) setStudents(await sRes.json());
@@ -60,8 +60,8 @@ export default function Gradebook() {
         showLoader();
         try {
             const [qRes, mRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/assessments/${assessmentId}/questions`),
-                fetch(`http://localhost:5000/api/assessments/${assessmentId}/marks`)
+                fetch(`/api/assessments/${assessmentId}/questions`),
+                fetch(`/api/assessments/${assessmentId}/marks`)
             ]);
 
             if (qRes.ok) setQuestions(await qRes.json());
@@ -83,7 +83,7 @@ export default function Gradebook() {
     const handleSeedStudents = async () => {
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/students/${courseId}/seed`, { method: 'POST' });
+            const res = await fetch(`/api/students/${courseId}/seed`, { method: 'POST' });
             if (res.ok) {
                 toast.success("Students Seeded Successfully!");
                 fetchData();
@@ -119,7 +119,7 @@ export default function Gradebook() {
 
         showLoader();
         try {
-            const res = await fetch('http://localhost:5000/api/assessments/marks', {
+            const res = await fetch('/api/assessments/marks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ updates })

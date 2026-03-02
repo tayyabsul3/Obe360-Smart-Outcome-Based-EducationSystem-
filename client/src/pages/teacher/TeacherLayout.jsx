@@ -53,7 +53,7 @@ export default function TeacherLayout() {
     const fetchAssignments = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/assignments/teacher/${user.id}`);
+            const res = await fetch(`/api/assignments/teacher/${user.id}`);
             if (res.ok) {
                 const data = await res.json();
                 setAssignments(data);

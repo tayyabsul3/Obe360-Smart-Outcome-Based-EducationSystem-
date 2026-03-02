@@ -55,7 +55,7 @@ export default function CLOManager() {
     const fetchCLOs = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/clos/${courseId}`);
+            const res = await fetch(`/api/clos/${courseId}`);
             if (res.ok) setClos(await res.json());
         } catch (error) {
             console.error(error);
@@ -67,7 +67,7 @@ export default function CLOManager() {
 
     const fetchAvailablePlos = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/programs/plos/course/${courseId}`);
+            const res = await fetch(`/api/programs/plos/course/${courseId}`);
             if (res.ok) setAvailablePlos(await res.json());
         } catch (error) {
             console.error("Failed to load PLOs:", error);
@@ -110,7 +110,7 @@ export default function CLOManager() {
 
         // Fetch current mapping for this CLO
         try {
-            const res = await fetch(`http://localhost:5000/api/clos/${clo.id}/mapping`);
+            const res = await fetch(`/api/clos/${clo.id}/mapping`);
             if (res.ok) {
                 const mapping = await res.json();
                 if (mapping && mapping.length > 0) {
@@ -155,8 +155,8 @@ export default function CLOManager() {
 
         showLoader();
         const url = editingId
-            ? `http://localhost:5000/api/clos/${editingId}`
-            : 'http://localhost:5000/api/clos';
+            ? `/api/clos/${editingId}`
+            : '/api/clos';
 
         const method = editingId ? 'PUT' : 'POST';
         const body = {
@@ -189,7 +189,7 @@ export default function CLOManager() {
         if (!confirm("Delete this CLO?")) return;
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/clos/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/clos/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success("CLO Deleted");
                 fetchCLOs();

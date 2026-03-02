@@ -70,7 +70,7 @@ export default function AssessmentManager() {
 
     const fetchCLOs = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/clos/${courseId}`);
+            const res = await fetch(`/api/clos/${courseId}`);
             if (res.ok) setClos(await res.json());
         } catch (error) {
             console.error("Failed to fetch CLOs", error);
@@ -80,7 +80,7 @@ export default function AssessmentManager() {
     const fetchAssessments = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/${courseId}`);
+            const res = await fetch(`/api/assessments/${courseId}`);
             if (res.ok) {
                 const data = await res.json();
                 setAssessments(data);
@@ -100,7 +100,7 @@ export default function AssessmentManager() {
     const handleExportOutcomes = async () => {
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/course/${courseId}/export-all`);
+            const res = await fetch(`/api/assessments/course/${courseId}/export-all`);
             if (!res.ok) throw new Error("Failed to fetch export data");
 
             const { assessments: exportAssessments, marks, enrollments } = await res.json();
@@ -178,7 +178,7 @@ export default function AssessmentManager() {
             const formDataFile = new FormData();
             formDataFile.append('file', importAssessmentsFile);
 
-            const res = await fetch(`http://localhost:5000/api/assessments/course/${courseId}/import-definitions`, {
+            const res = await fetch(`/api/assessments/course/${courseId}/import-definitions`, {
                 method: 'POST',
                 body: formDataFile
             });
@@ -215,7 +215,7 @@ export default function AssessmentManager() {
         if (!window.confirm("Delete this Class Activity?")) return;
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/assessments/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success("Activity Deleted");
                 fetchAssessments();
@@ -234,7 +234,7 @@ export default function AssessmentManager() {
         if (!window.confirm("Are you sure you want to DELETE ALL class activities for this course? This action cannot be undone.")) return;
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/course/${courseId}`, { method: 'DELETE' });
+            const res = await fetch(`/api/assessments/course/${courseId}`, { method: 'DELETE' });
             if (res.ok) {
                 toast.success("All Activities Deleted");
                 fetchAssessments();
@@ -321,8 +321,8 @@ export default function AssessmentManager() {
         showLoader();
         try {
             const url = isEditing
-                ? `http://localhost:5000/api/assessments/${activeAssessment.id}`
-                : 'http://localhost:5000/api/assessments';
+                ? `/api/assessments/${activeAssessment.id}`
+                : '/api/assessments';
 
             const method = isEditing ? 'PUT' : 'POST';
 
@@ -373,7 +373,7 @@ export default function AssessmentManager() {
 
     const fetchEnrolledStudents = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/students/${courseId}`);
+            const res = await fetch(`/api/students/${courseId}`);
             if (res.ok) setEnrolledStudents(await res.json());
         } catch (error) {
             console.error(error);
@@ -382,7 +382,7 @@ export default function AssessmentManager() {
 
     const fetchMarks = async (assessmentId) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/${assessmentId}/marks`);
+            const res = await fetch(`/api/assessments/${assessmentId}/marks`);
             if (res.ok) {
                 const marks = await res.json();
                 const newOutcomes = {};
@@ -459,7 +459,7 @@ export default function AssessmentManager() {
             // Need students to pre-fill the template
             let students = enrolledStudents;
             if (students.length === 0) {
-                const res = await fetch(`http://localhost:5000/api/students/${courseId}`);
+                const res = await fetch(`/api/students/${courseId}`);
                 if (res.ok) students = await res.json();
             }
 
@@ -512,7 +512,7 @@ export default function AssessmentManager() {
         try {
             let students = enrolledStudents;
             if (students.length === 0) {
-                const res = await fetch(`http://localhost:5000/api/students/${courseId}`);
+                const res = await fetch(`/api/students/${courseId}`);
                 if (res.ok) students = await res.json();
             }
 
@@ -599,7 +599,7 @@ export default function AssessmentManager() {
 
         setUploading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/${activeAssessment.id}/import`, {
+            const res = await fetch(`/api/assessments/${activeAssessment.id}/import`, {
                 method: 'POST',
                 body: formData // No Content-Type header needed for FormData handled by fetch
             });
@@ -637,7 +637,7 @@ export default function AssessmentManager() {
         setAdvancedUploading(true);
         showLoader();
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/course/${courseId}/import-advanced`, {
+            const res = await fetch(`/api/assessments/course/${courseId}/import-advanced`, {
                 method: 'POST',
                 body: formData
             });
@@ -713,7 +713,7 @@ export default function AssessmentManager() {
         }
 
         try {
-            const res = await fetch(`http://localhost:5000/api/assessments/marks`, {
+            const res = await fetch(`/api/assessments/marks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ updates })
@@ -748,17 +748,8 @@ export default function AssessmentManager() {
                 </div>
             </div>
 
-            {/* Top Toolbar */}
             <div className="flex flex-wrap gap-2">
                 <Button onClick={handleOpenCreate} className="bg-[#107C41] hover:bg-[#0c5c30] text-white">Add Class Activity</Button>
-                <Button variant="outline" className="bg-[#107C41] hover:bg-[#0c5c30] text-white border-0">Bulk Creation</Button>
-                <Button variant="outline" className="bg-[#107C41] hover:bg-[#0c5c30] text-white border-0">Add Rubric</Button>
-                <Button onClick={() => setImportAssessmentsOpen(true)} variant="outline" className="bg-[#337AB7] hover:bg-[#286090] text-white border-0">Import Class Activities</Button>
-                <Button variant="outline" className="bg-[#337AB7] hover:bg-[#286090] text-white border-0">Export</Button>
-                <Button onClick={handleExportPDF} variant="outline" className="bg-[#337AB7] hover:bg-[#286090] text-white border-0">Export PDF</Button>
-                <Button onClick={() => setImportOpen(true)} variant="outline" className="bg-[#337AB7] hover:bg-[#286090] text-white border-0">Import Activity Outcome</Button>
-                <Button onClick={handleExportOutcomes} variant="outline" className="bg-[#337AB7] hover:bg-[#286090] text-white border-0">Export Activity Outcome</Button>
-
             </div>
 
             {/* List Section */}
@@ -792,6 +783,7 @@ export default function AssessmentManager() {
                             <TableBody>
                                 {assessments.map((a, index) => {
                                     const totalMarks = a.assessment_questions?.reduce((sum, q) => sum + (q.max_marks || 0), 0) || 0;
+                                    const calculatedGpaWeight = a.assessment_questions?.reduce((sum, q) => sum + (parseFloat(q.obe_weight) || 0), 0) || a.gpa_weight || 0;
 
                                     return (
                                         <TableRow key={a.id} className="hover:bg-slate-50/30">
@@ -803,7 +795,7 @@ export default function AssessmentManager() {
                                             </TableCell>
                                             <TableCell className="text-sm text-[#337AB7] font-bold cursor-pointer hover:underline">{a.title}</TableCell>
                                             <TableCell className="text-center font-bold text-slate-700">{totalMarks}</TableCell>
-                                            <TableCell className="text-center font-bold text-slate-700">{a.gpa_weight || 0}%</TableCell>
+                                            <TableCell className="text-center font-bold text-slate-700">{calculatedGpaWeight}%</TableCell>
                                             <TableCell className="text-right pr-4">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -842,16 +834,6 @@ export default function AssessmentManager() {
             {/* Bottom Actions */}
             <div className="flex gap-2 mt-4">
                 <Button variant="destructive" className="bg-[#ff5b5b] hover:bg-[#ff4040]" onClick={handleDeleteAll}>Delete All</Button>
-                <Button className="bg-[#107C41] hover:bg-[#0c5c30]">Copy GPA Weight</Button>
-            </div>
-
-            {/* Summary Section Placeholder */}
-            <div className="mt-8 bg-slate-100 p-4 rounded-lg flex items-center justify-between">
-                <div className="flex gap-16">
-                    <div className="font-black text-slate-700">Code</div>
-                    <div className="font-black text-slate-700">Activities</div>
-                </div>
-                <div className="text-xs text-slate-400">CLO Mapping Summary</div>
             </div>
 
             {/* Create Class Activity Modal */}

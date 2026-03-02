@@ -27,7 +27,7 @@ export default function Teachers() {
     const fetchTeachers = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5000/api/teachers');
+            const res = await fetch('/api/teachers');
             if (res.ok) {
                 const data = await res.json();
                 setTeachers(data);
@@ -46,7 +46,7 @@ export default function Teachers() {
         e.preventDefault();
         setInviting(true);
         try {
-            const res = await fetch('http://localhost:5000/api/invite-teacher', {
+            const res = await fetch('/api/invite-teacher', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: inviteEmail, fullName: inviteName }),

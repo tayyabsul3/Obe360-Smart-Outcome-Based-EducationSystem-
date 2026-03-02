@@ -5,9 +5,6 @@ import Header from './Header';
 export default function MainLayout() {
     return (
         <div className="flex h-screen bg-[#F4F7F9] overflow-hidden font-sans">
-            {/* Sidebar (Includes both Primary & Secondary) */}
-            <Sidebar />
-
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Header (Includes both Main & Nav Bar) */}

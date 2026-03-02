@@ -46,7 +46,7 @@ export default function Students() {
     const fetchStudents = async () => {
         setLoading(true);
         try {
-            let url = 'http://localhost:5000/api/students';
+            let url = '/api/students';
             const params = new URLSearchParams();
             if (selectedBatch !== 'ALL') params.append('batch', selectedBatch);
             if (selectedSection !== 'ALL') params.append('section', selectedSection);
@@ -65,7 +65,7 @@ export default function Students() {
 
     const fetchBatches = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/students/meta/batches');
+            const res = await fetch('/api/students/meta/batches');
             const data = await res.json();
             setBatches(data);
         } catch (err) { console.error(err); }
@@ -74,7 +74,7 @@ export default function Students() {
     const handleSeedData = async () => {
         setSeeding(true);
         try {
-            const res = await fetch('http://localhost:5000/api/students/seed-global', { method: 'POST' });
+            const res = await fetch('/api/students/seed-global', { method: 'POST' });
             if (res.ok) {
                 toast.success("Dummy students seeded successfully!");
                 fetchStudents();

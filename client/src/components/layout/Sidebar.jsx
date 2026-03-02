@@ -44,7 +44,7 @@ export default function Sidebar() {
     const fetchSections = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/semesters/sections/${user.id}/${workingSemesterId}`);
+            const res = await fetch(`/api/semesters/sections/${user.id}/${workingSemesterId}`);
             if (res.ok) {
                 setSections(await res.json());
             }
