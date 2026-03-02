@@ -67,6 +67,41 @@ const createCoursesBulk = async (req, res) => {
     }
 };
 
+// --- Courses Edit/Delete ---
+
+const updateCourse = async (req, res) => {
+    const { id } = req.params;
+    const { title, code, credit_hours, lab_hours } = req.body;
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('courses')
+            .update({ title, code, credit_hours, lab_hours })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+const deleteCourse = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabaseAdmin
+            .from('courses')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        res.json({ message: "Course deleted successfully" });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
 // --- Study Plan (Program Courses) ---
 
 const getProgramCourses = async (req, res) => {
@@ -164,5 +199,7 @@ module.exports = {
     createCoursesBulk,
     getProgramCourses,
     addCourseToProgram,
-    addCoursesToStudyPlanBulk
+    addCoursesToStudyPlanBulk,
+    updateCourse,
+    deleteCourse
 };

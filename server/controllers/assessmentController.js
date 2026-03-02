@@ -659,19 +659,23 @@ const exportOutcomes = async (req, res) => {
 
         if (aError) throw aError;
 
-        const { data: marks, error: mError } = await supabaseAdmin
-            .from('student_marks')
-            .select('*')
-            .in('assessment_id', assessments.map(a => a.id));
+        let marks = [];
+        if (assessments && assessments.length > 0) {
+            const { data, error: mError } = await supabaseAdmin
+                .from('student_marks')
+                .select('*')
+                .in('assessment_id', assessments.map(a => a.id));
 
-        if (mError) throw mError;
+            if (mError) throw mError;
+            marks = data || [];
+        }
 
         const { data: enrollments } = await supabaseAdmin
             .from('enrollments')
             .select('student_id, students ( id, reg_no, name )')
             .eq('course_id', courseId);
 
-        res.json({ assessments, marks, enrollments });
+        res.json({ assessments: assessments || [], marks, enrollments: enrollments || [] });
     } catch (error) {
         console.error("Export Outcomes Error:", error);
         res.status(500).json({ error: error.message });

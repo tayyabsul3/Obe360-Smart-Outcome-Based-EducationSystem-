@@ -20,12 +20,32 @@ const getCLOs = async (req, res) => {
     try {
         const { data, error } = await supabaseAdmin
             .from('course_learning_outcomes')
-            .select('*')
+            .select(`
+                *,
+                clo_plo_mapping (
+                    plo_id,
+                    learning_type,
+                    level,
+                    emphasis_level
+                )
+            `)
             .eq('course_id', courseId)
             .order('code', { ascending: true });
 
         if (error) throw error;
-        res.json(data);
+
+        const flattenedData = data.map(c => {
+            const mapping = c.clo_plo_mapping && c.clo_plo_mapping.length > 0 ? c.clo_plo_mapping[0] : null;
+            return {
+                ...c,
+                plo_id: mapping ? mapping.plo_id : null,
+                learning_type: mapping ? mapping.learning_type : c.type || 'Cognitive',
+                mapping_level: mapping ? mapping.level : c.level || 'C1',
+                emphasis_level: mapping ? mapping.emphasis_level : null
+            };
+        });
+
+        res.json(flattenedData);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
