@@ -2,76 +2,128 @@
 
 ![OBE360 Illustration](./client/public/obe360_hero_banner.png)
 
-## Overview
+## 📖 What is OBE360?
 
-**OBE360** is a comprehensive educational platform designed to streamline Outcome-Based Education (OBE) management. It features a secure and modern architecture separating the frontend and backend to ensure scalability and performance.
+**OBE360** is a comprehensive, modern, and intelligent educational platform designed to streamline and automate Outcome-Based Education (OBE) management for universities and educational institutions. 
 
-This repository contains the full source code for both the **Client** (React) and **Server** (Node.js) applications.
+Traditional education systems often focus purely on grades (GPA). Outcome-Based Education shifts this paradigm by focusing on **what students can actually do** after they are taught (Outcomes). OBE360 tracks these outcomes by mapping course assessments to specific Course Learning Outcomes (CLOs) and broader Program Learning Outcomes (PLOs).
 
-## Key Features
+The platform features a secure, scalable architecture separating the **frontend (React)** and **backend (Node.js/Express)**, integrated with **Supabase** for robust authentication, data management, and Row-Level Security (RLS).
 
--   **🔐 Secure Authentication**: Integrated with Supabase Auth including Role-Based Access Control (RBAC) for Admins and Teachers.
--   **📩 Teacher Onboarding System**:
-    -   Admin-controlled invitation flow.
-    -   Secure email delivery via SMTP (Nodemailer).
-    -   **Forced Password Change**: Enhanced security requiring new teachers to reset credentials on first login.
--   **🎨 Modern UI/UX**:
-    -   Built with **React**, **Vite**, and **Tailwind CSS**.
-    -   Beautiful components using **Shadcn UI**.
-    -   Smooth animations with **GSAP**.
-    -   Interactive Data Tables and Badges.
--   **🛡️ Robust Backend**:
-    -   **Express.js** API with security middleware (`helmet`, `cors`, `morgan`).
-    -   Supabase Admin API integration for user management.
+---
 
-## 🚀 Getting Started
+## ✨ Key Features
 
-This project is set up as a monorepo. You will need to set up both the Client and Server separately.
+- **🔐 Secure Authentication & RBAC**: Integrated with Supabase Auth, offering strict Role-Based Access Control distinguishing between **Admins** and **Teachers**.
+- **📩 Teacher Onboarding System**: 
+  - Admin-controlled secure invitation flow via email (Nodemailer/SMTP).
+  - Forces newly invited teachers to change their password upon their very first login.
+- **📊 Advanced OBE Analytics & Dashboards**:
+  - **Comprehensive Course Dashboards**: View overall class performance, GPA distributions, and detailed CLO attainment matrices.
+  - **Consolidated PLO Reports**: Automatically calculates and connects CLO achievements to high-level PLOs to visualize program-wide mastery.
+  - **Smart PDF Exports**: Professionally paginated reports using `jsPDF-autotable` and `html2canvas`.
+- **🏫 Academic Management**:
+  - Manage Programs, Courses, Classes, and Semesters.
+  - Define and map PLOs and CLOs dynamically.
+  - Bulk-import data (Assignments, Programs, Students) via CSV.
+- **🎨 Modern UI/UX**:
+  - Built with **React**, **Vite**, and **Tailwind CSS**.
+  - Beautiful, highly accessible components using **Shadcn UI**.
+  - Smooth micro-interactions and transitions with **GSAP**.
 
-### 1. Backend Setup (Server)
+---
 
-Navigate to the `server` directory to set up the API.
+## 🛠️ Technology Stack
 
-> 📄 **See detailed instructions**: [Server README](./server/README.md)
+### Frontend (Client)
+- **Framework**: React 18 + Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn UI, Radix UI
+- **State Management**: Zustand
+- **Charting & Visuals**: Recharts
+- **PDF Generation**: jsPDF, html2canvas
+- **Animations**: GSAP
+
+### Backend (Server)
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database & Auth**: Supabase (PostgreSQL)
+- **Email Delivery**: Nodemailer (SMTP)
+- **Security**: Helmet, CORS
+- **File Parsing**: Multer, xlsx
+
+---
+
+## 🚀 Getting Started & Installation
+
+OBE360 is built as a **Monorepo** consisting of two main directories: `/client` and `/server`. You will need to spin up both concurrently.
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [Git](https://git-scm.com/)
+- A [Supabase](https://supabase.com/) account for the database and authentication.
+- An SMTP provider (like Gmail App Passwords, SendGrid, etc.) for emails.
+
+### 1. Database Setup (Supabase)
+Create a new project in Supabase. You will need to extract your:
+1. **Supabase URL**
+2. **Supabase Anon Key**
+3. **Supabase Service Role Key** (Keep this secure!)
+
+*(Note: The database schemas and RLS policies must be configured in your Supabase SQL editor for the application to function securely.)*
+
+### 2. Backend Setup (Server)
+Navigate to the `server` directory to configure and start the Express REST API.
 
 ```bash
 cd server
 npm install
-# Configure your .env file
-npm run dev
 ```
 
-### 2. Frontend Setup (Client)
+Create a `.env` file in the `server` directory and configure the following variables:
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SMTP_HOST=smtp.gmail.com  
+SMTP_PORT=465             
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+SMTP_SECURE=true          
+SMTP_FROM_EMAIL="OBE360 Admin <your_email@gmail.com>"
+```
 
-Navigate to the `client` directory to launch the UI.
+Start the backend server:
+```bash
+npm run dev
+```
+*The server will typically run on `http://localhost:5000`.*
 
-> 📄 **See detailed instructions**: [Client README](./client/README.md)
+### 3. Frontend Setup (Client)
+Open a new terminal window and navigate to the `client` directory to configure the React application.
 
 ```bash
 cd client
 npm install
-# Configure your .env file
-npm run dev
 ```
 
-## 🛠️ Technology Stack
+Create a `.env` file in the `client` directory and configure the following variables:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-### Frontend
--   **Framework**: React 18 + Vite
--   **Styling**: Tailwind CSS, Shadcn UI
--   **State Management**: Zustand
--   **Icons**: Lucide React
--   **Animations**: GSAP
-
-### Backend
--   **Runtime**: Node.js
--   **Framework**: Express.js
--   **Database**: Supabase (PostgreSQL)
--   **Email**: Nodemailer (SMTP)
--   **Security**: Helmet, CORS
+Start the frontend development server:
+```bash
+npm run dev
+```
+*The client will typically run on `http://localhost:5173`.*
 
 ---
 
-### Acknowledgments
+## 👨‍💻 Development & Contribution
 
+- **Admin Access**: When first registering your Super Admin account, ensure the backend logic or Supabase dashboard assigns the role `admin` to your `users` table record.
+- **Troubleshooting**: If you experience "Row Level Security Violation" errors during API requests, verify that the `server/.env` contains the correct `SUPABASE_SERVICE_ROLE_KEY` and restart the backend `nodemon` process.
+
+### Acknowledgments
 Developed by **Tayyab Sultan**.

@@ -1,41 +1,73 @@
-# OBE360 Client
+# OBE360 Frontend (Client)
 
-This is the frontend application for the OBE360 platform, built with React, Vite, Tailwind CSS, and Shadcn UI.
+This is the React frontend application for the **OBE360** educational platform, a system designed to streamline Outcome-Based Education (OBE) management.
 
-## Prerequisites
+## 🌟 Tech Stack
 
-- Node.js (v18 or higher recommended)
-- npm
+- **Framework**: React 18
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **Components**: Shadcn UI & Radix UI Primitives
+- **State Management**: Zustand
+- **Routing**: React Router DOM v6
+- **Animations**: GSAP
+- **Data Visualization**: Recharts
+- **PDF Export**: jsPDF, jsPDF-Autotable, html2canvas
 
-## Setup & Installation
+---
 
-1.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
+## 🚀 Getting Started
 
-2.  **Environment Variables**:
-    - Rename `.env.example` to `.env` (or create a new `.env` file).
-    - Add your Supabase credentials:
-        ```env
-        VITE_SUPABASE_URL=your_supabase_project_url
-        VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-        ```
+To run the frontend client locally, follow these steps.
 
-## Running the Application
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [npm](https://www.npmjs.com/)
 
-To start the development server:
+### 1. Installation
 
+Clone the repository and navigate to the `client` directory:
+```bash
+cd client
+npm install
+```
+
+### 2. Environment Variables
+
+Create a new file named `.env` in the root of the `client` directory.
+
+Add your Supabase project credentials. These are necessary to authenticate users against the live database.
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 3. Running the Development Server
+
+Start the Vite development server:
 ```bash
 npm run dev
 ```
 
-The application will typically run on [http://localhost:5173](http://localhost:5173).
+The application will be accessible at [http://localhost:5173](http://localhost:5173). Any changes made to the React code will automatically hot-reload in the browser.
 
-## Build for Production
+---
 
-To build the application for production:
+## 📦 Building for Production
 
+When you are ready to deploy the frontend, build the optimized static assets:
 ```bash
 npm run build
 ```
+
+This will generate a `dist/` directory containing the minified and bundled application, ready to be hosted on Vercel, Netlify, or any static file server.
+
+## 🤝 Key Project Structure
+
+- `/src/pages`: Contains all the main route views (e.g., `Landing.jsx`, `AdminDashboard.jsx`, `TeacherPages.jsx`).
+- `/src/components/ui`: Houses the reusable Shadcn UI components.
+- `/src/store`: Zustand state management stores (e.g., `authStore.js`).
+- `/src/utils`: Helper functions and shared logic.
+
+## ⚠️ Notes
+Make sure the **OBE360 Backend Server** is running concurrently on port `5000` to handle API requests securely.
