@@ -310,7 +310,7 @@ export default function CLOManager() {
 
             {/* Workflow Modal */}
             <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
-                <DialogContent className="sm:max-w-[650px] p-0 border-0 shadow-2xl overflow-hidden rounded-3xl">
+                <DialogContent className="sm:max-w-[90vw] w-[90vw] h-[90vh] max-h-[90vh] p-0 border-0 shadow-2xl overflow-hidden rounded-3xl flex flex-col">
                     <DialogHeader className="p-6 bg-[#337AB7] text-white">
                         <DialogTitle className="text-xl font-black tracking-tight flex items-center gap-3">
                             <span className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-xs">
@@ -326,7 +326,7 @@ export default function CLOManager() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="p-8 bg-white">
+                    <div className="p-8 bg-white flex-1 overflow-y-auto">
                         {stage === 1 ? (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-12 gap-6">
@@ -461,7 +461,7 @@ export default function CLOManager() {
                         )}
                     </div>
 
-                    <DialogFooter className="bg-slate-50 p-6 border-t border-slate-100 flex items-center justify-between sm:justify-between px-8">
+                    <DialogFooter className="bg-slate-50 p-6 border-t border-slate-100 flex items-center justify-between sm:justify-between px-8 shrink-0">
                         {stage === 1 ? (
                             <>
                                 <Button variant="ghost" onClick={() => setManualDialogOpen(false)} className="font-black text-[10px] uppercase tracking-widest h-10 px-6">Discard</Button>

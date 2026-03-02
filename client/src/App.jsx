@@ -6,6 +6,7 @@ import useUIStore from '@/store/uiStore';
 
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
+import Landing from '@/pages/Landing';
 import Dashboard from '@/pages/Dashboard';
 import Profile from '@/pages/Profile';
 import MainLayout from '@/components/layout/MainLayout';
@@ -32,7 +33,18 @@ import {
   CLOManager,
   AssessmentManager,
   Students,
-  PLOMapping
+  PLOMapping,
+  AwardList,
+  GPAManager,
+  CLOAttainment,
+  CLOAttainmentGraph,
+  PLOAttainment,
+  PLOAttainmentGraph,
+  PLORecommendations,
+  ConsolidatedReport,
+  CourseBreadth,
+  GPAAttainmentGraph,
+  OBEMarks
 } from '@/pages/teacher/TeacherPages';
 import TeacherRootLayout from '@/pages/teacher/TeacherRootLayout';
 import TeacherCourseLayout from '@/pages/teacher/TeacherCourseLayout';
@@ -66,7 +78,7 @@ function App() {
   }
 
   const ProtectedRoute = ({ children }) => {
-    if (!user) return <Navigate to="/login" />;
+    if (!user) return <Navigate to="/" />;
     if (isFirstLogin && window.location.pathname !== '/change-password') {
       return <Navigate to="/change-password" />;
     }
@@ -83,6 +95,7 @@ function App() {
         <Toaster position="top-right" richColors closeButton duration={5000} />
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={!user ? <Landing /> : <Navigate to="/dashboard" />} />
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
 
           <Route path="/change-password" element={user ? <ChangePassword /> : <Navigate to="/login" />} />
@@ -90,7 +103,7 @@ function App() {
           {/* Dashboard Redirector */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              {role === 'admin' ? <Dashboard /> : <Navigate to="/teacher/courses" replace />}
+              {role === 'admin' ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/teacher/courses" replace />}
             </ProtectedRoute>
           } />
 
@@ -116,7 +129,7 @@ function App() {
             <Route path="teachers" element={<Teachers />} />
             <Route path="students" element={<AdminStudents />} />
             <Route path="settings" element={<AdminSettings />} />
-            <Route path="dashboard" element={<div>Admin Dashboard (Static Stats Coming Soon)</div>} />
+            <Route path="dashboard" element={<Dashboard />} />
           </Route>
 
           {/* Teacher Routes */}
@@ -139,32 +152,32 @@ function App() {
 
               {/* CLO Module */}
               <Route path="clos" element={<CLOManager />} />
-              <Route path="attainment" element={<div className="p-4 bg-white rounded shadow-sm">CLO Attainment coming soon</div>} />
-              <Route path="graph" element={<div className="p-4 bg-white rounded shadow-sm">CLO Graph coming soon</div>} />
-              <Route path="comments" element={<div className="p-4 bg-white rounded shadow-sm">CLO Comments coming soon</div>} />
+              <Route path="clos/attainment" element={<CLOAttainment />} />
+              <Route path="clos/attainment-graph" element={<CLOAttainmentGraph />} />
 
               {/* PLO Module */}
-              <Route path="plo-mapping" element={<PLOMapping />} />
-              <Route path="plo-attainment" element={<div className="p-4 bg-white rounded shadow-sm">PLO Attainment coming soon</div>} />
-
-              {/* View Class Module */}
-              <Route path="content" element={<div className="p-4 bg-white rounded shadow-sm">Course Content coming soon</div>} />
-              <Route path="plan" element={<div className="p-4 bg-white rounded shadow-sm">Teaching Plan coming soon</div>} />
+              <Route path="plos/attainment" element={<PLOAttainment />} />
+              <Route path="plos/attainment-graph" element={<PLOAttainmentGraph />} />
+              <Route path="plos/recommendations" element={<PLORecommendations />} />
 
               {/* Assessments Module */}
               <Route path="assessments" element={<AssessmentManager />} />
-              <Route path="gradebook" element={<Gradebook />} />
-              <Route path="upload" element={<div className="p-4 bg-white rounded shadow-sm">Excel Upload coming soon</div>} />
+              <Route path="assessments/gpa" element={<GPAManager />} />
+              <Route path="assessments/award-list" element={<AwardList />} />
+              <Route path="obe-marks" element={<OBEMarks />} />
 
               {/* Students Module */}
               <Route path="students" element={<Students />} />
-              <Route path="attendance" element={<div className="p-4 bg-white rounded shadow-sm">Student Attendance coming soon</div>} />
-              <Route path="assistants" element={<div className="p-4 bg-white rounded shadow-sm">Class Assistants coming soon</div>} />
 
               {/* Reports Module */}
-              <Route path="report" element={<div className="p-4 bg-white rounded shadow-sm">Course Report coming soon</div>} />
-              <Route path="summary" element={<div className="p-4 bg-white rounded shadow-sm">OBE Summary coming soon</div>} />
+              <Route path="reports/consolidated" element={<ConsolidatedReport />} />
+              <Route path="reports/breadth" element={<CourseBreadth />} />
+              <Route path="reports/gpa-graph" element={<GPAAttainmentGraph />} />
 
+              {/* Other Routes */}
+              <Route path="activity-weights" element={<div className="p-4 bg-white rounded shadow-sm">Activity Weights coming soon</div>} />
+              <Route path="contents" element={<div className="p-4 bg-white rounded shadow-sm">Course Contents coming soon</div>} />
+              <Route path="cqi" element={<div className="p-4 bg-white rounded shadow-sm">CQI Actions coming soon</div>} />
             </Route>
 
             <Route path="gamification" element={<Gamification />} />
@@ -172,7 +185,7 @@ function App() {
           </Route>
 
           {/* Catch-all redirect */}
-          <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
     </ErrorBoundary >

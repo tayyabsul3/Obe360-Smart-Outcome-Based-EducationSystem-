@@ -22,7 +22,7 @@ export default function MainLayout() {
 
                 {/* Footer / Status Bar (Optional) */}
                 <footer className="h-6 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    <span>Qobe v2.0 - Outcome Based Education System</span>
+                    <span>OBE 360 v2.0 - Outcome Based Education System</span>
                     <span>System Time: {new Date().toLocaleTimeString()}</span>
                 </footer>
             </div>

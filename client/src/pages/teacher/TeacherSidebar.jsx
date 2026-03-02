@@ -10,7 +10,12 @@ import {
     ChevronDown,
     ChevronRight,
     LayoutDashboard,
-    Library
+    Library,
+    Target,
+    BarChart,
+    ClipboardCheck,
+    Weight,
+    Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSemesterStore from '@/store/semesterStore';
@@ -95,36 +100,122 @@ export default function TeacherSidebar() {
         : "Select Semester";
 
     const contextNavItems = [
-        { label: 'Course Overview', to: `/teacher/course/${activeCourseId}/overview`, icon: LayoutDashboard },
-        { label: 'CLO Management', to: `/teacher/course/${activeCourseId}/clos`, icon: Library },
-        { label: 'Assessments', to: `/teacher/course/${activeCourseId}/assessments`, icon: CheckSquare },
-        { label: 'Gradebook', to: `/teacher/course/${activeCourseId}/gradebook`, icon: Calculator },
+        { label: 'View Class Room', to: `/teacher/course/${activeCourseId}/overview`, icon: LayoutDashboard },
+        {
+            label: 'CLOs',
+            icon: Library,
+            isAccordion: true,
+            value: "clos",
+            subItems: [
+                { label: 'CLOs List', to: `/teacher/course/${activeCourseId}/clos`, end: true },
+                { label: 'CLOs Attainment', to: `/teacher/course/${activeCourseId}/clos/attainment` },
+                { label: 'CLO Attainment Graph', to: `/teacher/course/${activeCourseId}/clos/attainment-graph` },
+            ]
+        },
+        {
+            label: 'PLOs',
+            icon: Target,
+            isAccordion: true,
+            value: "plos",
+            subItems: [
+                { label: 'PLOs Attainment', to: `/teacher/course/${activeCourseId}/plos/attainment` },
+                { label: 'PLO Attainment Graph', to: `/teacher/course/${activeCourseId}/plos/attainment-graph` },
+            ]
+        },
+        {
+            label: 'Reports',
+            icon: BarChart,
+            isAccordion: true,
+            value: "reports",
+            subItems: [
+                { label: 'Consolidated Report', to: `/teacher/course/${activeCourseId}/reports/consolidated` },
+                { label: 'Course Breadth', to: `/teacher/course/${activeCourseId}/reports/breadth` },
+                { label: 'GPA Attainment Graph', to: `/teacher/course/${activeCourseId}/reports/gpa-graph` },
+            ]
+        },
+        {
+            label: 'Assesment / Marks',
+            icon: CheckSquare,
+            isAccordion: true,
+            value: "assessments",
+            subItems: [
+                { label: 'Class Activities', to: `/teacher/course/${activeCourseId}/assessments`, end: true },
+                { label: 'GPA', to: `/teacher/course/${activeCourseId}/assessments/gpa` },
+                { label: 'OBE', to: `/teacher/course/${activeCourseId}/obe-marks` },
+                { label: 'Award List', to: `/teacher/course/${activeCourseId}/assessments/award-list` },
+            ]
+        },
+        { label: 'Activity Weights', to: `/teacher/course/${activeCourseId}/activity-weights`, icon: Weight },
         { label: 'Students', to: `/teacher/course/${activeCourseId}/students`, icon: Users },
+        { label: 'Course Contents', to: `/teacher/course/${activeCourseId}/contents`, icon: Layers },
     ];
 
     return (
-        <aside className="w-[240px] bg-white border-r border-slate-200 flex flex-col h-full shadow-sm shrink-0">
+        <aside
+            className="w-[240px] bg-white border-r border-slate-200 flex flex-col h-full shadow-sm shrink-0 overflow-y-auto"
+            style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+        >
+            <style>{`
+                aside::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
             {/* Context Section (Top) */}
             <div className="flex-1 flex flex-col min-h-0">
                 <div className="p-4 pb-2">
                     <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Course Context</h3>
                     {activeCourseId ? (
                         <nav className="space-y-0.5">
-                            {contextNavItems.map((item) => (
-                                <NavLink
-                                    key={item.to}
-                                    to={item.to}
-                                    className={({ isActive }) => cn(
-                                        "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200",
-                                        isActive
-                                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                                            : "text-slate-500 hover:bg-slate-50 hover:text-blue-600"
-                                    )}
-                                >
-                                    <item.icon size={16} />
-                                    <span>{item.label}</span>
-                                </NavLink>
-                            ))}
+                            <Accordion type="multiple" className="w-full space-y-0.5" defaultValue={[]}>
+                                {contextNavItems.map((item) => (
+                                    item.isAccordion ? (
+                                        <AccordionItem value={item.value} key={item.value} className="border-none">
+                                            <AccordionTrigger className={cn(
+                                                "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 hover:no-underline [&[data-state=open]>svg:first-child]:text-blue-600",
+                                                "text-slate-500 hover:bg-slate-50 hover:text-blue-600 data-[state=open]:bg-blue-50/50 data-[state=open]:text-blue-700"
+                                            )}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <item.icon size={16} />
+                                                    <span>{item.label}</span>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="pb-2 pt-1">
+                                                <div className="flex flex-col space-y-1 pl-9 pr-2">
+                                                    {item.subItems.map(sub => (
+                                                        <NavLink
+                                                            key={sub.to}
+                                                            to={sub.to}
+                                                            end={sub.end}
+                                                            className={({ isActive }) => cn(
+                                                                "flex items-center py-2 px-3 rounded-lg text-xs font-bold transition-all duration-200",
+                                                                isActive
+                                                                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                                                                    : "text-slate-500 hover:bg-slate-100 hover:text-blue-600"
+                                                            )}
+                                                        >
+                                                            {sub.label}
+                                                        </NavLink>
+                                                    ))}
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ) : (
+                                        <NavLink
+                                            key={item.to}
+                                            to={item.to}
+                                            className={({ isActive }) => cn(
+                                                "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200",
+                                                isActive
+                                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                                                    : "text-slate-500 hover:bg-slate-50 hover:text-blue-600"
+                                            )}
+                                        >
+                                            <item.icon size={16} />
+                                            <span>{item.label}</span>
+                                        </NavLink>
+                                    )
+                                ))}
+                            </Accordion>
                         </nav>
                     ) : (
                         <div className="p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">

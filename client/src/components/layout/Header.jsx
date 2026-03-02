@@ -72,7 +72,7 @@ export default function Header() {
                     <div className="bg-blue-600 p-1 rounded-lg shadow-lg rotate-3 group-hover:rotate-0 transition-transform">
                         <ObeLogo className="w-5 h-5 text-white" />
                     </div>
-                    <span className="font-black text-xl tracking-tighter text-white">Qobe</span>
+                    <span className="font-black text-xl tracking-tighter text-white">OBE 360</span>
                 </div>
 
                 <div className="flex items-center gap-4 border-l border-slate-700 pl-6">

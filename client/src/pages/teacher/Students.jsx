@@ -211,7 +211,7 @@ export default function Students() {
 
             {/* Redesigned Large Selection Modal */}
             <Dialog open={importOpen} onOpenChange={setImportOpen}>
-                <DialogContent className="sm:max-w-[95vw] w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-3xl border-0 shadow-2xl">
+                <DialogContent className="sm:max-w-[90vw] w-[90vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-3xl border-0 shadow-2xl">
                     <DialogHeader className="p-6 bg-white border-b shrink-0 flex flex-row items-center justify-between">
                         <div>
                             <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight">Select Students</DialogTitle>

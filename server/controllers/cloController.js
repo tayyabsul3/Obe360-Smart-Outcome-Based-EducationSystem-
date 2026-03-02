@@ -32,12 +32,20 @@ const getCLOs = async (req, res) => {
 };
 
 const createCLO = async (req, res) => {
-    const { course_id, code, description, title, type, level, plo_id } = req.body;
+    const { course_id, code, description, title, type, level, plo_id, is_active } = req.body;
     try {
         // 1. Create CLO
         const { data: clo, error } = await supabaseAdmin
             .from('course_learning_outcomes')
-            .insert([{ course_id, code, description, title, type, level }])
+            .insert([{
+                course_id,
+                code,
+                description,
+                title: title || description.substring(0, 50),
+                type,
+                level: req.body.level || 'C1',
+                is_active: is_active ?? true
+            }])
             .select()
             .single();
 
@@ -66,11 +74,18 @@ const createCLO = async (req, res) => {
 
 const updateCLO = async (req, res) => {
     const { id } = req.params;
-    const { code, description, title, type, level, plo_id } = req.body;
+    const { code, description, title, type, level, plo_id, is_active } = req.body;
     try {
         const { data, error } = await supabaseAdmin
             .from('course_learning_outcomes')
-            .update({ code, description, title, type, level })
+            .update({
+                code,
+                description,
+                title: title || description.substring(0, 50),
+                type,
+                level: req.body.level || 'C1',
+                is_active: is_active ?? true
+            })
             .eq('id', id)
             .select()
             .single();

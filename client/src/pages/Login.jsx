@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader } from '@/components/ui/loader';
-import { Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import loginIllustration from '/login_illustration_1765278826079.png';
 import gsap from 'gsap';
 
@@ -49,7 +49,7 @@ export default function Login() {
         setIsLoading(false);
 
         if (result.success) {
-            toast.success("Login successful!", { description: "Welcome back to OBE360." });
+            toast.success("Login successful!", { description: "Welcome back to OBE 360." });
             if (result.isFirstLogin) {
                 navigate('/change-password');
             } else {
@@ -66,7 +66,7 @@ export default function Login() {
             <div className="hidden lg:flex w-1/2 bg-blue-50 flex-col items-center justify-center p-12 relative overflow-hidden">
                 <div ref={imageRef} className="z-10 flex flex-col items-center">
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-blue-900 mb-2">Welcome to OBE360</h1>
+                        <h1 className="text-3xl font-bold text-blue-900 mb-2">Welcome to OBE 360</h1>
                         <p className="text-blue-700">Manage your educational platform seamlessly.</p>
                     </div>
                     <img
@@ -81,7 +81,16 @@ export default function Login() {
             </div>
 
             {/* Right Side - Form */}
-            <div className="flex-1 flex items-center justify-center bg-white p-8">
+            <div className="flex-1 flex items-center justify-center bg-white p-8 relative">
+                {/* Back Button */}
+                <Button
+                    variant="ghost"
+                    className="absolute top-8 left-8 gap-2 text-slate-500 hover:text-slate-900"
+                    onClick={() => navigate('/')}
+                >
+                    <ArrowLeft size={16} /> Back to Home
+                </Button>
+
                 <div ref={formRef} className="w-full max-w-md space-y-8">
                     <div className="text-left">
                         <h2 className="text-3xl font-bold tracking-tight text-gray-900">Log in to access portal features.</h2>
