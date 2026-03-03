@@ -17,7 +17,8 @@ const getPrograms = async (req, res) => {
 };
 
 const createProgram = async (req, res) => {
-    const { title, code, duration_years } = req.body;
+    let { title, code, duration_years } = req.body;
+    duration_years = parseInt(duration_years, 10) || 4; // Crucial fix for false-positive RLS error
     try {
         const { data, error } = await supabaseAdmin
             .from('programs')
