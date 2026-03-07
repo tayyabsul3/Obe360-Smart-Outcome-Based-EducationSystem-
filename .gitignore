@@ -30,5 +30,7 @@ Thumbs.db
 *.sln
 
 # Generated Files
-# migrations/
+migrations/
+curriculum_data/
 *.csv
+*.sql
