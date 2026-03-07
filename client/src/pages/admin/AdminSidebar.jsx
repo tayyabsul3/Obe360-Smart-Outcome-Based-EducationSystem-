@@ -24,7 +24,7 @@ export default function AdminSidebar() {
     ];
 
     return (
-        <aside className="w-[220px] bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
+        <aside className="w-[220px] h-screen sticky top-0 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
             <div className="p-4 bg-slate-100/5">
                 <h2 className="text-xl font-black text-white tracking-widest uppercase">Administration</h2>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter mt-1">Institutional OBE Management</p>

@@ -2,22 +2,22 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for 587
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
 });
 
 const sendInvitationEmail = async (email, password, fullName) => {
-    try {
-        const mailOptions = {
-            from: process.env.SMTP_FROM_EMAIL || '"OBE360 Admin" <noreply@obe360.com>',
-            to: email,
-            subject: 'Welcome to OBE360 - Teacher Invitation',
-            html: `
+  try {
+    const mailOptions = {
+      from: process.env.SMTP_FROM_EMAIL || '"OBE360 Admin" <noreply@obe360.com>',
+      to: email,
+      subject: 'Welcome to OBE360 - Teacher Invitation',
+      html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
           <h2 style="color: #333;">Welcome to OBE360!</h2>
           <p>Hello ${fullName || 'Teacher'},</p>
@@ -34,17 +34,21 @@ const sendInvitationEmail = async (email, password, fullName) => {
           <p style="font-size: 12px; color: #777; margin-top: 30px;">If you did not expect this email, please ignore it.</p>
         </div>
       `,
-        };
+    };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent: %s', info.messageId);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error('Error sending email:', error);
-        return { success: false, error: error.message };
-    }
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent: %s', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('\n========== NODEMAILER / SMTP ERROR ==========');
+    console.error('Error Message:', error.message);
+    console.error('Stack Trace:', error.stack);
+    console.error('Full Error Object:', JSON.stringify(error, null, 2));
+    console.error('=============================================\n');
+    return { success: false, error: error.message, fullError: error };
+  }
 };
 
 module.exports = {
-    sendInvitationEmail,
+  sendInvitationEmail,
 };

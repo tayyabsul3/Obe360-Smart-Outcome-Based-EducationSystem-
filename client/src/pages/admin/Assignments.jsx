@@ -21,7 +21,8 @@ import {
     Search,
     Pencil,
     Plus,
-    CheckCircle
+    CheckCircle,
+    X
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -130,8 +131,25 @@ export default function Assignments() {
         ? programCourses
         : programCourses.filter(c => c.semester === parseInt(selectedSemesterNum));
 
-    const getAssignmentForCourse = (courseId) => {
-        return assignments.find(a => a.course_id === courseId);
+    const handleUnassign = async (assignmentId) => {
+        try {
+            const res = await fetch(`/api/assignments/${assignmentId}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                toast.success("Specialist unassigned");
+                loadData();
+            } else {
+                toast.error("Failed to unassign");
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Network error");
+        }
+    };
+
+    const getAssignmentsForCourse = (courseId) => {
+        return assignments.filter(a => a.course_id === courseId);
     };
 
     return (
@@ -183,7 +201,7 @@ export default function Assignments() {
             ) : filteredCourses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredCourses.map(item => {
-                        const assignment = getAssignmentForCourse(item.course_id);
+                        const courseAssignments = getAssignmentsForCourse(item.course_id);
                         return (
                             <Card key={item.id} className="group border-0 shadow-lg hover:shadow-2xl transition-all duration-500 rounded-[2.5rem] overflow-hidden bg-white flex flex-col border-t-4 border-t-transparent hover:border-t-blue-500">
                                 <CardHeader className="p-6 pb-2">
@@ -201,58 +219,55 @@ export default function Assignments() {
                                 </CardHeader>
 
                                 <CardContent className="p-6 pt-2 flex-1 flex flex-col justify-between space-y-4">
-                                    {assignment ? (
-                                        <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between group/assign">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-[10px]">
-                                                    {assignment.teacher?.full_name?.charAt(0) || 'T'}
+                                    <div className="space-y-2">
+                                        {courseAssignments.map(assignment => (
+                                            <div key={assignment.id} className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between group/assign border border-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-[10px]">
+                                                        {assignment.teacher?.full_name?.charAt(0) || 'T'}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Assigned</p>
+                                                        <p className="text-xs font-black text-slate-800">{assignment.teacher?.full_name || assignment.teacher?.email}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Assigned Specialist</p>
-                                                    <p className="text-xs font-black text-slate-800">{assignment.teacher?.full_name || assignment.teacher?.email}</p>
-                                                </div>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    onClick={() => handleUnassign(assignment.id)}
+                                                    className="h-8 w-8 rounded-xl opacity-0 group-hover/assign:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                                                >
+                                                    <X size={14} />
+                                                </Button>
                                             </div>
+                                        ))}
 
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl opacity-0 group-hover/assign:opacity-100 transition-opacity">
-                                                        <Pencil size={14} className="text-slate-400" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="rounded-2xl p-2 min-w-[200px] shadow-2xl">
-                                                    <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-slate-400 pb-2">Change Specialist</DropdownMenuLabel>
-                                                    {teachers.map(t => (
-                                                        <DropdownMenuItem key={t.id} onClick={() => handleAssign(item.course_id, t.id, item.semester)} className="rounded-xl h-10 font-bold">
-                                                            {t.full_name || t.email}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    ) : (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" className="w-full h-14 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all flex flex-col gap-1 py-10">
-                                                    <UserPlus size={20} className="text-slate-300" />
-                                                    Assign Specialist
+                                                <Button variant="outline" className="w-full h-12 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all flex items-center justify-center gap-2">
+                                                    <UserPlus size={16} />
+                                                    {courseAssignments.length > 0 ? 'Add Instructor' : 'Assign Specialist'}
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="center" className="rounded-2xl p-2 min-w-[240px] shadow-2xl max-h-[300px] overflow-auto">
                                                 <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-slate-400 pb-2">Select Faculty Member</DropdownMenuLabel>
-                                                {teachers.map(t => (
+                                                {teachers.filter(t => !courseAssignments.find(a => a.teacher_id === t.id)).map(t => (
                                                     <DropdownMenuItem key={t.id} onClick={() => handleAssign(item.course_id, t.id, item.semester)} className="rounded-xl h-10 font-bold">
                                                         {t.full_name || t.email}
                                                     </DropdownMenuItem>
                                                 ))}
+                                                {teachers.filter(t => !courseAssignments.find(a => a.teacher_id === t.id)).length === 0 && (
+                                                    <div className="text-xs text-center text-slate-500 p-4">All available teachers assigned.</div>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    )}
+                                    </div>
 
                                     <div className="flex items-center justify-between border-t border-slate-50 pt-4 mt-2">
                                         <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] flex items-center gap-1.5">
                                             <Clock size={12} /> {item.course?.credit_hours} HR/CREDIT
                                         </span>
-                                        {assignment && <CheckCircle size={14} className="text-emerald-500" />}
+                                        {courseAssignments.length > 0 && <CheckCircle size={14} className="text-emerald-500" />}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -121,16 +121,35 @@ const getProgramCourses = async (req, res) => {
 };
 
 const addCourseToProgram = async (req, res) => {
-    const { program_id, course_id, semester, course_type, is_lab_embedded } = req.body;
+    const { program_id, course_id, semester, course_type, is_lab_embedded, programId, courseId } = req.body;
+
+    const finalProgramId = program_id || programId;
+    const finalCourseId = course_id || courseId;
+
     try {
         const { data, error } = await supabaseAdmin
             .from('program_courses')
-            .insert([{ program_id, course_id, semester, course_type, is_lab_embedded }])
+            .insert([{ program_id: finalProgramId, course_id: finalCourseId, semester, course_type: course_type || 'Core', is_lab_embedded: is_lab_embedded || false }])
             .select()
             .single();
 
         if (error) throw error;
         res.json(data);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+const removeCourseFromProgram = async (req, res) => {
+    const { mappingId } = req.params;
+    try {
+        const { error } = await supabaseAdmin
+            .from('program_courses')
+            .delete()
+            .eq('id', mappingId);
+
+        if (error) throw error;
+        res.json({ message: "Course removed from study plan successfully" });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -199,6 +218,7 @@ module.exports = {
     createCoursesBulk,
     getProgramCourses,
     addCourseToProgram,
+    removeCourseFromProgram,
     addCoursesToStudyPlanBulk,
     updateCourse,
     deleteCourse

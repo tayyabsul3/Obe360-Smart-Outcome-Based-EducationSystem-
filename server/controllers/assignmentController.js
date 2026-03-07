@@ -26,32 +26,20 @@ const getAssignments = async (req, res) => {
 const createAssignment = async (req, res) => {
     const { course_id, teacher_id, program_id, semester_id, semester_number } = req.body;
     try {
-        // Check if assignment already exists for this course in this program/semester/session
-        const { data: existing } = await supabaseAdmin
-            .from('semester_assignments')
-            .select('*')
-            .match({ course_id, program_id, semester_id })
-            .maybeSingle();
-
-        if (existing) {
-            // Update teacher if already exists
-            const { data, error } = await supabaseAdmin
-                .from('semester_assignments')
-                .update({ teacher_id, semester_number })
-                .eq('id', existing.id)
-                .select()
-                .single();
-            if (error) throw error;
-            return res.json(data);
-        }
-
+        // Just insert - the database's UNIQUE constraint on (course_id, teacher_id, program_id, semester_id) 
+        // will automatically prevent assigning the SAME teacher twice, but allows DIFFERENT teachers!
         const { data, error } = await supabaseAdmin
             .from('semester_assignments')
             .insert([{ course_id, teacher_id, program_id, semester_id, semester_number }])
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '23505') { // Unique violation
+                return res.status(400).json({ error: "This teacher is already assigned to this exact course in this session." });
+            }
+            throw error;
+        }
         res.json(data);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -97,9 +85,25 @@ const getAllAssignments = async (req, res) => {
     }
 };
 
+const deleteAssignment = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabaseAdmin
+            .from('semester_assignments')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        res.json({ message: "Assignment deleted successfully" });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getAssignments,
     createAssignment,
     getTeacherAssignments,
-    getAllAssignments
+    getAllAssignments,
+    deleteAssignment
 };

@@ -30,8 +30,11 @@ const inviteTeacher = async (req, res) => {
     });
 
     if (error) {
-      console.error('Supabase Create User Error:', error);
-      return res.status(400).json({ error: error.message });
+      console.error('\n========== SUPABASE CREATE USER ERROR ==========');
+      console.error('Error Message:', error.message);
+      console.error('Full Error Object:', JSON.stringify(error, null, 2));
+      console.error('================================================\n');
+      return res.status(400).json({ error: error.message, fullError: error });
     }
 
     const user = data.user;
@@ -54,8 +57,11 @@ const inviteTeacher = async (req, res) => {
     res.json({ message: "Invitation sent successfully!", user: user });
 
   } catch (err) {
-    console.error('Server Error inviting teacher:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('\n========== GENERAL SERVER ERROR (INVITE) ==========');
+    console.error('Error Stack:', err.stack);
+    console.error('Full Error:', err);
+    console.error('===================================================\n');
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 };
 
@@ -183,10 +189,39 @@ const getTeachers = async (req, res) => {
   }
 };
 
+const deleteTeacher = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  try {
+    // 1. Delete from Supabase Auth (This will cascade to profiles table)
+    const { data, error } = await supabaseAdmin.auth.admin.deleteUser(id);
+
+    if (error) {
+      console.error('\n========== SUPABASE DELETE USER ERROR ==========');
+      console.error('Error Message:', error.message);
+      console.error('Full Error Object:', JSON.stringify(error, null, 2));
+      console.error('================================================\n');
+      return res.status(400).json({ error: error.message, fullError: error });
+    }
+
+    res.json({ message: "Teacher deleted successfully", data });
+  } catch (err) {
+    console.error('\n========== GENERAL SERVER ERROR (DELETE TEACHER) ==========');
+    console.error('Error Stack:', err.stack);
+    console.error('===========================================================\n');
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+  }
+};
+
 module.exports = {
   inviteTeacher,
   register,
   login,
   updatePassword,
-  getTeachers
+  getTeachers,
+  deleteTeacher
 };

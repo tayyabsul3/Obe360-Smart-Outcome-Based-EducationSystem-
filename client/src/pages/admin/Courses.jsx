@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Download, Upload, FileSpreadsheet, Loader2, AlertCircle, Plus, Search, MoreHorizontal, Pencil, Trash2, FileText, BookOpen, FlaskConical, Clock, LayoutGrid, List, CheckSquare } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, Loader2, AlertCircle, Plus, Search, MoreHorizontal, Pencil, Trash2, FileText, BookOpen, FlaskConical, Clock, LayoutGrid, List, CheckSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,6 +35,10 @@ export default function Courses() {
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState('GRID'); // GRID | LIST
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 12;
 
     // Dialog States
     const [open, setOpen] = useState(false);
@@ -237,6 +241,16 @@ export default function Courses() {
         course.code.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedCourses = filteredCourses.slice(startIndex, startIndex + itemsPerPage);
+
+    // Reset page on search or view mode change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, viewMode]);
+
     const statCards = [
         { label: 'Total Catalog', value: stats.total, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50' },
         { label: 'Lab Sessions', value: stats.labCourses, icon: FlaskConical, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -320,10 +334,11 @@ export default function Courses() {
                     {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-48 w-full rounded-[2.5rem]" />)}
                 </div>
             ) : filteredCourses.length > 0 ? (
-                viewMode === 'GRID' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {filteredCourses.map(course => (
-                            <Card key={course.id} className="group border-0 shadow-lg hover:shadow-2xl transition-all duration-500 rounded-[2.5rem] overflow-hidden bg-white">
+                <>
+                    {viewMode === 'GRID' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {paginatedCourses.map(course => (
+                                <Card key={course.id} className="group border-0 shadow-lg hover:shadow-2xl transition-all duration-500 rounded-[2.5rem] overflow-hidden bg-white">
                                 <CardHeader className="p-8 pb-4 flex flex-row items-start justify-between bg-slate-50/50">
                                     <div className="h-14 w-14 rounded-2xl bg-white shadow-sm flex items-center justify-center font-black text-blue-600 text-xl border border-slate-100 uppercase">
                                         {course.code.slice(0, 2)}
@@ -383,7 +398,7 @@ export default function Courses() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredCourses.map(course => (
+                                {paginatedCourses.map(course => (
                                     <TableRow key={course.id} className="hover:bg-blue-50/20 border-b border-slate-50 transition-colors h-20 group">
                                         <TableCell className="pl-10 font-black text-blue-600">{course.code}</TableCell>
                                         <TableCell className="font-bold text-slate-800">{course.title}</TableCell>
@@ -407,7 +422,57 @@ export default function Courses() {
                             </TableBody>
                         </Table>
                     </Card>
-                )
+                    )}
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 sm:px-6 bg-white rounded-2xl shadow-sm mt-4">
+                            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">
+                                        Showing <span className="font-bold">{startIndex + 1}</span> to <span className="font-bold">{Math.min(startIndex + itemsPerPage, filteredCourses.length)}</span> of{' '}
+                                        <span className="font-bold">{filteredCourses.length}</span> results
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className="rounded-l-md rounded-r-none h-10"
+                                        >
+                                            <span className="sr-only">Previous</span>
+                                            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                                        </Button>
+                                        {Array.from({ length: totalPages }).map((_, i) => (
+                                            <Button
+                                                key={i}
+                                                variant={currentPage === i + 1 ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setCurrentPage(i + 1)}
+                                                className="rounded-none border-x-0 first:border-l last:border-r h-10"
+                                            >
+                                                {i + 1}
+                                            </Button>
+                                        ))}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                            className="rounded-r-md rounded-l-none h-10"
+                                        >
+                                            <span className="sr-only">Next</span>
+                                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                        </Button>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
             ) : (
                 <div className="py-32 text-center space-y-4 bg-white rounded-[3rem] shadow-sm border border-slate-50">
                     <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto">

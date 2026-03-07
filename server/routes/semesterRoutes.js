@@ -5,6 +5,7 @@ const semesterController = require('../controllers/semesterController');
 // Semesters
 router.get('/', semesterController.getSemesters);
 router.post('/', semesterController.createSemester);
+router.put('/:id/activate', semesterController.setActiveSemester);
 
 // Sections
 router.get('/sections/:teacherId/:semesterId', semesterController.getTeacherSections);

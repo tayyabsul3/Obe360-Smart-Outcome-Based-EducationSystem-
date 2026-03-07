@@ -14,7 +14,9 @@ import {
     MoreHorizontal,
     Trash2,
     Database,
-    Loader2
+    Loader2,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import {
     Select,
@@ -38,10 +40,19 @@ export default function Students() {
     const [selectedSection, setSelectedSection] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     useEffect(() => {
         fetchStudents();
         fetchBatches();
     }, [selectedBatch, selectedSection]);
+
+    // Reset page on search or filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedBatch, selectedSection]);
 
     const fetchStudents = async () => {
         setLoading(true);
@@ -94,6 +105,11 @@ export default function Students() {
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.reg_no.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedStudents = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -183,10 +199,10 @@ export default function Students() {
                                     <TableCell colSpan={5} className="p-4"><Skeleton className="h-16 w-full rounded-2xl" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : filteredStudents.length > 0 ? (
-                            filteredStudents.map((student, idx) => (
+                         ) : filteredStudents.length > 0 ? (
+                            paginatedStudents.map((student, idx) => (
                                 <TableRow key={student.id} className="group hover:bg-blue-50/30 border-slate-50 transition-colors">
-                                    <TableCell className="font-black text-slate-300 pl-8">{String(idx + 1).padStart(2, '0')}</TableCell>
+                                    <TableCell className="font-black text-slate-300 pl-8">{String(startIndex + idx + 1).padStart(2, '0')}</TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-4">
                                             <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
@@ -231,6 +247,55 @@ export default function Students() {
                         )}
                     </TableBody>
                 </Table>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-slate-100 px-8 py-4 bg-slate-50/30">
+                        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm text-slate-500 font-medium">
+                                    Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to <span className="font-bold text-slate-800">{Math.min(startIndex + itemsPerPage, filteredStudents.length)}</span> of{' '}
+                                    <span className="font-bold text-slate-800">{filteredStudents.length}</span> students
+                                </p>
+                            </div>
+                            <div>
+                                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="rounded-l-md rounded-r-none h-10 border-slate-200"
+                                    >
+                                        <span className="sr-only">Previous</span>
+                                        <ChevronLeft className="h-4 w-4 text-slate-600" aria-hidden="true" />
+                                    </Button>
+                                    {Array.from({ length: totalPages }).map((_, i) => (
+                                        <Button
+                                            key={i}
+                                            variant={currentPage === i + 1 ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={cn("rounded-none border-x-0 first:border-l last:border-r h-10 border-slate-200", currentPage === i + 1 ? "bg-blue-600 text-white" : "text-slate-600")}
+                                        >
+                                            {i + 1}
+                                        </Button>
+                                    ))}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className="rounded-r-md rounded-l-none h-10 border-slate-200"
+                                    >
+                                        <span className="sr-only">Next</span>
+                                        <ChevronRight className="h-4 w-4 text-slate-600" aria-hidden="true" />
+                                    </Button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </Card>
         </div>
     );

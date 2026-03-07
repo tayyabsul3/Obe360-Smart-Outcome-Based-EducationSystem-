@@ -19,8 +19,9 @@ import Classes from '@/pages/admin/Classes';
 import Assignments from '@/pages/admin/Assignments';
 import Teachers from '@/pages/admin/Teachers';
 import AdminStudents from '@/pages/admin/Students'; // Renamed to identify as Admin
+import Settings from '@/pages/admin/Settings';
 // Placeholders
-import { ReportsCenter, AdminSettings } from '@/pages/admin/AdminPages';
+import { ReportsCenter } from '@/pages/admin/AdminPages';
 import AdminRootLayout from '@/pages/admin/AdminRootLayout';
 
 // Teacher Pages
@@ -112,7 +113,7 @@ function App() {
             <Route path="assignments" element={<Assignments />} />
             <Route path="teachers" element={<Teachers />} />
             <Route path="students" element={<AdminStudents />} />
-            <Route path="settings" element={<AdminSettings />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="dashboard" element={<Dashboard />} />
           </Route>
 

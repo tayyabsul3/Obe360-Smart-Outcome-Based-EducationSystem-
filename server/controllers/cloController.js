@@ -83,7 +83,7 @@ const createCLO = async (req, res) => {
                     emphasis_level: req.body.emphasis_level || 'Medium'
                 }]);
 
-            if (mapError) console.error("Mapping Error:", mapError);
+            if (mapError) throw mapError;
         }
 
         res.json(clo);
@@ -112,17 +112,18 @@ const updateCLO = async (req, res) => {
 
         if (error) throw error;
 
-        // Update mapping if plo_id is present
-        if (plo_id) {
+        // Update mapping if plo_id is present in the request payload (including null or 'none')
+        if (plo_id !== undefined) {
             await supabaseAdmin.from('clo_plo_mapping').delete().eq('clo_id', id);
-            if (plo_id !== 'none') {
-                await supabaseAdmin.from('clo_plo_mapping').insert([{
+            if (plo_id && plo_id !== 'none') {
+                const { error: mapError } = await supabaseAdmin.from('clo_plo_mapping').insert([{
                     clo_id: id,
                     plo_id,
                     learning_type: req.body.learning_type || type || 'Cognitive',
                     level: req.body.level || 'C1',
                     emphasis_level: req.body.emphasis_level || 'Medium'
                 }]);
+                if (mapError) throw mapError;
             }
         }
 

@@ -103,6 +103,11 @@ const getPLOsByCourse = async (req, res) => {
 
 const createPLO = async (req, res) => {
     const { program_id, title, description } = req.body;
+    
+    if (!title || !/^PLO-\d+$/.test(title)) {
+        return res.status(400).json({ error: "Invalid PLO title format. Must be formatted like 'PLO-1', 'PLO-2', etc." });
+    }
+
     try {
         // 1. Get current max number
         const { data: maxData, error: maxError } = await supabaseAdmin
@@ -137,6 +142,11 @@ const createPLOsBulk = async (req, res) => {
     try {
         if (!plos || !Array.isArray(plos) || plos.length === 0) {
             return res.status(400).json({ error: "Invalid data." });
+        }
+
+        const isValid = plos.every(p => p.title && /^PLO-\d+$/.test(p.title));
+        if (!isValid) {
+            return res.status(400).json({ error: "Invalid PLO title format in bulk array. All must be formatted like 'PLO-1', 'PLO-2', etc." });
         }
 
         // 1. Get current max number

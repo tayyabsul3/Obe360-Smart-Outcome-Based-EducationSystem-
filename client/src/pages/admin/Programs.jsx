@@ -367,6 +367,12 @@ export default function Programs() {
     const handleCreatePlo = async (e) => {
         e.preventDefault();
         if (!selectedProgram) return;
+
+        if (!/^PLO-\d+$/.test(newPloTitle)) {
+            toast.error("Invalid Format", { description: "Title must be exactly formatted like 'PLO-1'" });
+            return;
+        }
+
         setCreatingPlo(true);
         showLoader();
         try {
@@ -403,6 +409,11 @@ export default function Programs() {
     };
 
     const saveEditPlo = async () => {
+        if (!/^PLO-\d+$/.test(editPloTitle)) {
+            toast.error("Invalid Format", { description: "Title must be exactly formatted like 'PLO-1'" });
+            return;
+        }
+
         showLoader();
         try {
             const res = await fetch(`/api/programs/plos/${editingPloId}`, {
