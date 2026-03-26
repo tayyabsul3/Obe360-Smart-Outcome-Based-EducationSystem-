@@ -1,0 +1,12 @@
+{
+  "name": "obe360-root",
+  "version": "1.0.0",
+  "description": "Root management for OBE360",
+  "private": true,
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "echo 'Standard npm does not support parallel execution without a tool like concurrently. Use dev.bat on Windows or install concurrently.'",
+    "install:all": "npm install --prefix client && npm install --prefix server"
+  }
+}

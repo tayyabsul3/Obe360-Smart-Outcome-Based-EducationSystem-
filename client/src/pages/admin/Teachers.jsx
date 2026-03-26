@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Plus, Search, Mail, Loader2, MoreHorizontal, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -213,12 +215,11 @@ export default function Teachers() {
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                        <div className="space-y-2">
-                            {[1, 2, 3].map((i) => (
+                            [1, 2, 3].map((i) => (
                                 <TableRow key={i}>
                                     <TableCell colSpan={6} className="p-4"><Skeleton className="h-16 w-full rounded-2xl" /></TableCell>
                                 </TableRow>
-                            ))}
+                            ))
                         ) : paginatedTeachers.length > 0 ? (
                             paginatedTeachers.map((teacher) => (
                                 <TableRow key={teacher.id} className="group hover:bg-blue-50/30 border-slate-50 transition-colors">
@@ -261,7 +262,6 @@ export default function Teachers() {
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
-                                    </TableRow>
                             ))
                         ) : (
                             <TableRow>
@@ -277,7 +277,6 @@ export default function Teachers() {
                     </TableBody>
                 </Table>
                         
-                        {/* Pagination Controls */}
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between border-t border-slate-100 px-8 py-4 bg-slate-50/30">

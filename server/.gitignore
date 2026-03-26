@@ -1,10 +1,6 @@
 # Dependencies
 node_modules/
 
-# Environment Variables
-.env
-.env.local
-
 # Logs
 logs
 *.log
@@ -13,3 +9,12 @@ npm-debug.log*
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Editors
+.vscode/
+.idea/
