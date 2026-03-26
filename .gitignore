@@ -1,23 +1,4 @@
-# Dependencies
-node_modules/
-
-# Environment Variables
-.env
-.env.local
-.env.*.local
-
-# Builds
-dist/
-build/
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-logs/
-*.log
-
-# OS
+# OS Specific
 .DS_Store
 Thumbs.db
 
@@ -28,9 +9,34 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+*.sw?
 
-# Generated Files
-migrations/
-curriculum_data/
-*.csv
-*.sql
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Builds
+dist/
+build/
+bin/
+obj/
+
+# Project Specific (Optional - remove if seeds/migrations should be tracked)
+#Migrations, SQL, and CSV are kept in the repo by default now.
+# curriculum_data/
+# migrations/
+# *.csv
+# *.sql

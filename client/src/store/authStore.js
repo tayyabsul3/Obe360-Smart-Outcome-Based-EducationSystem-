@@ -11,7 +11,16 @@ const useAuthStore = create((set) => ({
     checkSession: async () => {
         try {
             set({ loading: true });
-            const { data: { session } } = await supabase.auth.getSession();
+
+            // Create a timeout promise to prevent infinite hanging
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Session check timed out')), 8000)
+            );
+
+            // Race the supabase call against the timeout
+            const sessionPromise = supabase.auth.getSession();
+            
+            const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
 
             if (session) {
                 const { user } = session;
