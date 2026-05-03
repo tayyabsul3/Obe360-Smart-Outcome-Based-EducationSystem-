@@ -64,7 +64,7 @@ export default function TeamSection() {
 
             <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
                 <div className="flex flex-col md:flex-row relative">
-                    
+
                     {/* LEFT SIDE: Sticky Image Showcase (App-style display) */}
                     <div className="w-full md:w-1/2 md:sticky md:top-0 h-[40vh] md:h-screen flex items-center justify-center pt-24 md:pt-0 overflow-hidden relative z-10">
                         {/* Abstract Glow Behind Image */}
@@ -85,7 +85,7 @@ export default function TeamSection() {
                                     className="absolute inset-0 w-full h-full object-cover origin-center"
                                 />
                             </AnimatePresence>
-                            
+
                             {/* Inner Glass border effect overlay */}
                             <div className="absolute inset-0 border-[0.5px] border-white/20 rounded-[2rem] pointer-events-none"></div>
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60"></div>
@@ -95,8 +95,8 @@ export default function TeamSection() {
                     {/* RIGHT SIDE: Scrolling Text Content */}
                     <div className="w-full md:w-1/2 relative z-20 pb-24 md:pb-0">
                         {teamMembers.map((member, idx) => (
-                            <div 
-                                key={idx} 
+                            <div
+                                key={idx}
                                 ref={el => textRefs.current[idx] = el}
                                 data-index={idx}
                                 className="min-h-[60vh] md:min-h-screen flex flex-col justify-center py-20 pr-4 pl-4 md:pl-16 lg:pl-24"
