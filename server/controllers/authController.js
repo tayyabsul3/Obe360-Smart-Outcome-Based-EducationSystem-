@@ -1,6 +1,8 @@
 const supabaseAdmin = require('../config/supabase');
-const { sendInvitationEmail } = require('../utils/emailService');
+const { sendInvitationEmail, send2FAEmail } = require('../utils/emailService');
 const crypto = require('crypto');
+
+const otpCache = new Map();
 
 // Generate a random password
 const generatePassword = (length = 12) => {
@@ -114,38 +116,101 @@ const login = async (req, res) => {
     }
 
     // Fetch user profile to get role and is_first_login
-    const { data: profile, error: profileError } = await supabaseAdmin
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role, is_first_login')
       .eq('id', data.user.id)
       .single();
 
-    if (profileError) {
-      console.error('Login Profile Fetch Error:', profileError);
-      // Fallback or just continue with auth data
-    }
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 10 * 60000; // 10 minutes
+
+    otpCache.set(email, {
+        code: otpCode,
+        expires,
+        sessionData: {
+            user: data.user,
+            session: data.session,
+            role: profile?.role || 'teacher',
+            isFirstLogin: profile?.is_first_login
+        }
+    });
+
+    await send2FAEmail(email, otpCode, data.user?.user_metadata?.full_name);
 
     res.json({
-      message: "Login successful!",
-      user: data.user,
-      session: data.session,
-      role: profile?.role || 'teacher',
-      isFirstLogin: profile?.is_first_login // return the flag
+      message: "2FA Code sent to your email",
+      requires2FA: true,
+      email: email
     });
   } catch (err) {
     console.error('Login Error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
+const verify2FA = async (req, res) => {
+    const { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ error: "Email and code required" });
+
+    const cached = otpCache.get(email);
+    if (!cached) return res.status(400).json({ error: "Session expired or invalid" });
+
+    if (Date.now() > cached.expires) {
+        otpCache.delete(email);
+        return res.status(400).json({ error: "OTP expired" });
+    }
+
+    if (cached.code !== code) {
+        return res.status(400).json({ error: "Invalid code" });
+    }
+
+    otpCache.delete(email);
+    res.json({
+        message: "Login successful!",
+        ...cached.sessionData
+    });
+};
+
+const updateProfile = async (req, res) => {
+    const { userId, fullName } = req.body;
+    if (!userId || !fullName) return res.status(400).json({ error: "User ID and full name are required" });
+
+    try {
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+            userId,
+            { user_metadata: { full_name: fullName } }
+        );
+        if (authError) throw authError;
+
+        res.json({ message: "Profile updated successfully" });
+    } catch (err) {
+        console.error('Update Profile Error:', err);
+        res.status(500).json({ error: err.message || 'Failed to update profile' });
+    }
+};
+
 // Update user password and set is_first_login to false
 const updatePassword = async (req, res) => {
-  const { userId, newPassword } = req.body;
+  const { userId, newPassword, oldPassword, email } = req.body;
 
   if (!userId || !newPassword) {
     return res.status(400).json({ error: 'User ID and new password are required' });
   }
 
   try {
+    // Check old password if provided
+    if (oldPassword && email) {
+        const { error: testLoginError } = await supabaseAdmin.auth.signInWithPassword({
+            email,
+            password: oldPassword
+        });
+        if (testLoginError) {
+            return res.status(401).json({ error: "Incorrect current password" });
+        }
+    }
+
     // 1. Update Password in Supabase Auth
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
@@ -221,6 +286,8 @@ module.exports = {
   inviteTeacher,
   register,
   login,
+  verify2FA,
+  updateProfile,
   updatePassword,
   getTeachers,
   deleteTeacher

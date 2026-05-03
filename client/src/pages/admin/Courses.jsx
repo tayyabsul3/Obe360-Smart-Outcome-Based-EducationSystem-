@@ -509,11 +509,34 @@ export default function Courses() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Theory Credits</Label>
-                                    <Input type="number" value={creditHours} onChange={(e) => setCreditHours(e.target.value)} required className="h-14 rounded-2xl bg-slate-50 border-0 focus:bg-white text-slate-800 font-bold" />
+                                    <Input 
+                                        type="number" 
+                                        min="1"
+                                        max="6"
+                                        value={creditHours} 
+                                        onChange={(e) => {
+                                            let val = parseInt(e.target.value) || 0;
+                                            if (val > 6) val = 6;
+                                            setCreditHours(val);
+                                        }} 
+                                        required 
+                                        className="h-14 rounded-2xl bg-slate-50 border-0 focus:bg-white text-slate-800 font-bold" 
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Lab Credits</Label>
-                                    <Input type="number" value={labHours} onChange={(e) => setLabHours(e.target.value)} className="h-14 rounded-2xl bg-slate-50 border-0 focus:bg-white text-slate-800 font-bold" />
+                                    <Input 
+                                        type="number" 
+                                        min="0"
+                                        max="6"
+                                        value={labHours} 
+                                        onChange={(e) => {
+                                            let val = parseInt(e.target.value) || 0;
+                                            if (val > 6) val = 6;
+                                            setLabHours(val);
+                                        }} 
+                                        className="h-14 rounded-2xl bg-slate-50 border-0 focus:bg-white text-slate-800 font-bold" 
+                                    />
                                 </div>
                             </div>
                         </div>

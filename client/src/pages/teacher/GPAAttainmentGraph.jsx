@@ -203,7 +203,7 @@ export default function GPAAttainmentGraph() {
                                         <XAxis dataKey="grade" tick={{ fontSize: 13, fontWeight: 'bold' }} />
                                         <YAxis allowDecimals={false} label={{ value: 'No. of Students', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }} />
                                         <BarTooltip cursor={{ fill: '#f1f5f9' }} formatter={(val) => [`${val} Students`, 'Count']} />
-                                        <Bar dataKey="count" name="Students">
+                                        <Bar dataKey="count" name="Students" barSize={40} maxBarSize={60} radius={[4, 4, 0, 0]}>
                                             {barData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#337AB7' : '#e2e8f0'} />
                                             ))}

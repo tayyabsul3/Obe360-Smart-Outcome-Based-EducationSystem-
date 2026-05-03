@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Papa from 'papaparse';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,10 @@ export default function CLOManager() {
     // Modals State
     const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
     const [manualDialogOpen, setManualDialogOpen] = useState(false);
+    const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+    const [previewData, setPreviewData] = useState([]);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Workflow State: 1 = CLO Info, 2 = PLO Mapping
     const [stage, setStage] = useState(1);
@@ -76,7 +81,7 @@ export default function CLOManager() {
 
     const openCreate = () => {
         setFormData({
-            code: `CLO-${clos.length + 1}`,
+            code: `CLO-${String(clos.length + 1).padStart(2, '0')}`,
             description: '',
             type: 'Cognitive',
             is_active: true,
@@ -148,6 +153,11 @@ export default function CLOManager() {
             return toast.warning("Code and Description are required");
         }
 
+        const codePattern = /^CLO-\d{2}$/;
+        if (!codePattern.test(formData.code)) {
+            return toast.warning("Code must be in format 'CLO-01', 'CLO-02', etc.");
+        }
+
         if (stage === 1 && shouldMap) {
             setStage(2);
             return;
@@ -197,6 +207,75 @@ export default function CLOManager() {
         } catch (error) {
             toast.error("Failed to delete");
         } finally {
+            hideLoader();
+        }
+    };
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        showLoader();
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                hideLoader();
+                const data = results.data.map(row => ({
+                    code: row.code || row.Code || '',
+                    description: row.description || row.Description || '',
+                    type: row.type || row.Type || 'Cognitive',
+                    title: row.title || row.Title || ''
+                })).filter(row => row.code && row.description);
+
+                if (data.length === 0) {
+                    toast.error("No valid CLO data found in CSV");
+                    return;
+                }
+
+                setPreviewData(data);
+                setPreviewDialogOpen(true);
+                setChoiceDialogOpen(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            },
+            error: (err) => {
+                hideLoader();
+                toast.error("Failed to parse CSV");
+            }
+        });
+    };
+
+    const confirmImport = async () => {
+        // Validate formats before sending
+        const invalidRows = previewData.filter(row => !/^CLO-\d{2}$/.test(row.code));
+        if (invalidRows.length > 0) {
+            return toast.error(`Invalid CLO Code format in ${invalidRows.length} rows. Expected 'CLO-01', 'CLO-02', etc.`);
+        }
+
+        setIsImporting(true);
+        showLoader();
+        try {
+            const res = await fetch('/api/clos/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    course_id: courseId,
+                    clos: previewData
+                })
+            });
+
+            if (res.ok) {
+                toast.success(`Imported ${previewData.length} CLOs successfully`);
+                fetchCLOs();
+                setPreviewDialogOpen(false);
+            } else {
+                const err = await res.json();
+                toast.error(err.error || "Import failed");
+            }
+        } catch (error) {
+            toast.error("Network error during import");
+        } finally {
+            setIsImporting(false);
             hideLoader();
         }
     };
@@ -503,13 +582,66 @@ export default function CLOManager() {
                             </div>
                             <span className="font-black text-xs uppercase tracking-widest">Manual Entry</span>
                         </button>
-                        <div className="flex flex-col items-center gap-4 p-8 bg-slate-50 border-2 border-transparent rounded-3xl hover:border-green-600 hover:bg-green-50/50 transition-all text-green-600 group relative">
+                        <button
+                            className="flex flex-col items-center gap-4 p-8 bg-slate-50 border-2 border-transparent rounded-3xl hover:border-green-600 hover:bg-green-50/50 transition-all text-green-600 group relative"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
                             <div className="h-16 w-16 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <FileSpreadsheet size={32} />
                             </div>
                             <span className="font-black text-xs uppercase tracking-widest">Import CSV</span>
-                        </div>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept=".csv"
+                                onChange={handleFileSelect}
+                            />
+                        </button>
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Import Preview Dialog */}
+            <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+                <DialogContent className="sm:max-w-[700px] rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
+                    <DialogHeader className="p-6 bg-green-600 text-white">
+                        <DialogTitle className="text-xl font-black flex items-center gap-2">
+                            <FileSpreadsheet size={24} />
+                            PREVIEW CLO IMPORT
+                        </DialogTitle>
+                        <DialogDescription className="text-green-100 text-[10px] font-bold uppercase tracking-widest">
+                            Reviewing {previewData.length} outcomes from CSV
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="max-h-[400px] overflow-y-auto p-6">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="font-bold">CODE</TableHead>
+                                    <TableHead className="font-bold">DESCRIPTION</TableHead>
+                                    <TableHead className="font-bold">TYPE</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {previewData.map((row, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell className="font-black text-green-700">{row.code}</TableCell>
+                                        <TableCell className="text-xs">{row.description}</TableCell>
+                                        <TableCell className="text-[10px] font-bold uppercase">{row.type}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    <DialogFooter className="p-6 bg-slate-50 flex items-center justify-between border-t">
+                        <Button variant="ghost" onClick={() => setPreviewDialogOpen(false)} className="font-bold">Cancel</Button>
+                        <Button onClick={confirmImport} disabled={isImporting} className="bg-green-600 hover:bg-green-700 font-bold px-8">
+                            {isImporting ? "Importing..." : "CONFIRM IMPORT"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

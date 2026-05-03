@@ -13,6 +13,7 @@ export default function PLOAttainment() {
     const [clos, setClos] = useState([]);
     const [students, setStudents] = useState([]);
     const [marks, setMarks] = useState([]);
+    const [assessments, setAssessments] = useState([]);
 
     // UI state
     const [showWithMarks, setShowWithMarks] = useState("without");
@@ -29,8 +30,8 @@ export default function PLOAttainment() {
             const [cRes, mRes, pRes, clRes] = await Promise.all([
                 fetch(`/api/courses/${courseId}`),
                 fetch(`/api/assessments/course/${courseId}/export-all`),
-                fetch(`/api/plos`),
-                fetch(`/api/clos/course/${courseId}`)
+                fetch(`/api/programs/plos/course/${courseId}`),
+                fetch(`/api/clos/${courseId}`)
             ]);
 
             if (cRes.ok) setCourse(await cRes.json());
@@ -40,6 +41,7 @@ export default function PLOAttainment() {
             if (mRes.ok) {
                 const data = await mRes.json();
                 setMarks(data.marks || []);
+                setAssessments(data.assessments || []);
                 const studentList = data.enrollments?.map(e => ({
                     id: e.student_id,
                     name: e.students.name,
@@ -60,24 +62,49 @@ export default function PLOAttainment() {
     const calculateAttainment = (studentId) => {
         const results = {};
         const plosInCourse = [...new Set(clos.map(clo => clo.plo_id).filter(id => id && id !== 'none'))];
+        
         plosInCourse.forEach(ploId => {
             const mappedClos = clos.filter(clo => clo.plo_id === ploId);
             let totalWeightedScore = 0;
             let totalWeight = 0;
+
             mappedClos.forEach(clo => {
-                const cloMarks = marks.filter(m => m.student_id === studentId);
-                const sum = cloMarks.reduce((acc, curr) => {
-                    const max = curr.assessment_questions?.max_marks || 10;
-                    return acc + (curr.obtained_marks / max) * 100;
-                }, 0);
-                const avg = cloMarks.length > 0 ? sum / cloMarks.length : 0;
-                totalWeightedScore += avg;
+                // Filter marks for this student and this CLO
+                const cloMarks = marks.filter(m => 
+                    m.student_id === studentId && 
+                    m.assessment_questions?.clo_id === clo.id &&
+                    (includeCQI || !m.assessment_questions?.not_for_obe)
+                );
+
+                if (cloMarks.length === 0) return;
+
+                let sumObtained = 0;
+                let sumMax = 0;
+                let sumPercentages = 0;
+
+                cloMarks.forEach(m => {
+                    const max = m.assessment_questions?.max_marks || 10;
+                    sumObtained += m.obtained_marks;
+                    sumMax += max;
+                    sumPercentages += (m.obtained_marks / max) * 100;
+                });
+
+                let cloScore = 0;
+                if (weightMode === "actual") {
+                    cloScore = sumMax > 0 ? (sumObtained / sumMax) * 100 : 0;
+                } else {
+                    // Normalized: average of percentages
+                    cloScore = sumPercentages / cloMarks.length;
+                }
+
+                totalWeightedScore += cloScore;
                 totalWeight += 1;
             });
+
             const weightedTotal = totalWeight > 0 ? totalWeightedScore / totalWeight : 0;
             results[ploId] = {
                 weightedTotal: weightedTotal.toFixed(2),
-                isAchieved: weightedTotal >= 40
+                isAchieved: weightedTotal >= 50 // Standard institutional KPI
             };
         });
         return results;
@@ -93,7 +120,7 @@ export default function PLOAttainment() {
             doc.text(title, 14, 15);
             doc.setFontSize(10);
             doc.text(`${courseCode} - ${courseTitle}`, 14, 22);
-            doc.text(`Program Batch: BSCV2020 | Semester: 2nd Semester`, 14, 27);
+            doc.text(`Weighting: ${weightMode === 'actual' ? 'Actual' : 'Normalized'} | CQI: ${includeCQI ? 'Yes' : 'No'}`, 14, 27);
 
             const activePlos = plos.filter(p => clos.some(clo => clo.plo_id === p.id));
 
@@ -103,28 +130,11 @@ export default function PLOAttainment() {
                     ...activePlos.map(plo => ({ content: plo.code, colSpan: 2, styles: { halign: 'center', textColor: '#3b82f6', fontStyle: 'bold' } }))
                 ],
                 [
-                    { content: 'Activity', colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } },
-                    ...activePlos.flatMap(plo => [
-                        { content: 'Weighted Total', rowSpan: 3, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
-                        { content: 'PLO Acheived', rowSpan: 3, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } }
-                    ])
-                ],
-                [
-                    { content: 'Assigned CLO', colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } }
-                ],
-                [
-                    { content: '% Weight', colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } }
-                ],
-                [
-                    { content: '', colSpan: 2 },
-                    ...activePlos.map(plo => ({ content: 'KPI 40%', colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } }))
-                ],
-                [
                     { content: 'Registration No.', styles: { fillColor: [229, 231, 235], fontStyle: 'bold' } },
                     { content: 'Name', styles: { fillColor: [229, 231, 235], fontStyle: 'bold' } },
                     ...activePlos.flatMap(plo => [
-                        { content: '', styles: { fillColor: [229, 231, 235] } },
-                        { content: '', styles: { fillColor: [229, 231, 235] } }
+                        { content: 'Weighted Total', styles: { halign: 'center', fontStyle: 'bold' } },
+                        { content: 'Achieved (50%)', styles: { halign: 'center', fontStyle: 'bold' } }
                     ])
                 ]
             ];
@@ -146,21 +156,14 @@ export default function PLOAttainment() {
                 theme: 'grid',
                 styles: { fontSize: 8, cellPadding: 3 },
                 headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1, lineColor: [200, 200, 200] },
-                bodyStyles: { textColor: [50, 50, 50] },
-                alternateRowStyles: { fillColor: [255, 255, 255] },
-                didParseCell: function (data) {
-                    if (data.section === 'body' && data.column.index === 0) {
-                        data.cell.styles.textColor = '#3b82f6';
-                    }
-                    if (data.section === 'body' && data.column.index > 1) {
-                        data.cell.styles.halign = 'center';
-                    }
+                didParseCell: (data) => {
+                    if (data.section === 'body' && data.column.index === 0) data.cell.styles.textColor = '#3b82f6';
                 }
             });
             doc.save(`PLO_Attainment_${courseCode}.pdf`);
             toast.success("PDF Downloaded successfully!");
         } catch (error) {
-            console.error("PDF Error:", error);
+            console.error(error);
             toast.error("Failed to generate PDF");
         }
     };
@@ -171,156 +174,98 @@ export default function PLOAttainment() {
 
     return (
         <div className="p-6 bg-white min-h-screen font-sans">
-            {/* Page Title */}
             <h2 className="text-[22px] text-slate-500 mb-6">PLOs Attainment</h2>
 
-            {/* Top Controls */}
             <div className="flex flex-wrap items-start gap-x-16 gap-y-4 text-[13px] text-slate-700 mb-10">
-                {/* Mark Display */}
                 <div className="flex flex-col gap-2">
                     <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="markDisplay"
-                            value="without"
-                            checked={showWithMarks === "without"}
-                            onChange={() => setShowWithMarks("without")}
-                            className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer"
-                        />
+                        <input type="radio" name="markDisplay" value="without" checked={showWithMarks === "without"} onChange={() => setShowWithMarks("without")} className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer" />
                         Without Marks
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="markDisplay"
-                            value="with"
-                            checked={showWithMarks === "with"}
-                            onChange={() => setShowWithMarks("with")}
-                            className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer"
-                        />
+                        <input type="radio" name="markDisplay" value="with" checked={showWithMarks === "with"} onChange={() => setShowWithMarks("with")} className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer" />
                         With Marks
                     </label>
                 </div>
 
-                {/* Weighting Strategy */}
                 <div className="flex flex-col gap-2">
                     <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="weightMode"
-                            value="actual"
-                            checked={weightMode === "actual"}
-                            onChange={() => setWeightMode("actual")}
-                            className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer"
-                        />
+                        <input type="radio" name="weightMode" value="actual" checked={weightMode === "actual"} onChange={() => setWeightMode("actual")} className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer" />
                         Actual Weights
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="weightMode"
-                            value="normalized"
-                            checked={weightMode === "normalized"}
-                            onChange={() => setWeightMode("normalized")}
-                            className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer"
-                        />
+                        <input type="radio" name="weightMode" value="normalized" checked={weightMode === "normalized"} onChange={() => setWeightMode("normalized")} className="w-3.5 h-3.5 accent-[#2196F3] cursor-pointer" />
                         Normalized Weights
                     </label>
                 </div>
 
-                {/* CQI Checkbox */}
                 <label className="flex items-center gap-2 cursor-pointer mt-0.5">
-                    <input
-                        type="checkbox"
-                        checked={includeCQI}
-                        onChange={(e) => setIncludeCQI(e.target.checked)}
-                        className="w-3.5 h-3.5 accent-[#2196F3] rounded-sm cursor-pointer"
-                    />
+                    <input type="checkbox" checked={includeCQI} onChange={(e) => setIncludeCQI(e.target.checked)} className="w-3.5 h-3.5 accent-[#2196F3] rounded-sm cursor-pointer" />
                     Include CQI Activity
                 </label>
 
-                {/* Action Buttons */}
                 <div className="flex items-center gap-2 shrink-0">
-                    <button
-                        onClick={fetchData}
-                        className="bg-[#2196F3] hover:bg-blue-600 text-white rounded px-5 py-1.5 text-[13px] shadow-sm transition-colors"
-                    >
-                        Show Result
-                    </button>
-                    <button
-                        onClick={handleDownloadPDF}
-                        className="bg-[#2196F3] hover:bg-blue-600 text-white rounded px-5 py-1.5 text-[13px] shadow-sm transition-colors"
-                    >
-                        PDF
-                    </button>
+                    <button onClick={fetchData} className="bg-[#2196F3] hover:bg-blue-600 text-white rounded px-5 py-1.5 text-[13px] shadow-sm transition-colors">Show Result</button>
+                    <button onClick={handleDownloadPDF} className="bg-[#2196F3] hover:bg-blue-600 text-white rounded px-5 py-1.5 text-[13px] shadow-sm transition-colors">PDF</button>
                 </div>
             </div>
 
-            {/* Program Batch Details */}
             <div className="font-bold text-[13px] mb-2 flex items-center gap-1.5">
                 <span className="text-slate-800">Program Batch :</span>
                 <span className="text-[#2196F3]">BSCV2020</span>
             </div>
 
-            {/* Exact Table UI */}
             <div className="overflow-x-auto border border-slate-200 bg-white">
                 <table className="w-full text-left border-collapse text-[13px]">
                     <thead>
-                        {/* Row 1 */}
                         <tr>
-                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 tracking-wide min-w-[250px] whitespace-nowrap bg-white">
-                                PLO
-                            </th>
+                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white min-w-[250px]">PLO</th>
                             {coursePlos.map(plo => (
-                                <th key={`plo-${plo.id}`} colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-[#2196F3] bg-white">
-                                    {plo.code}
-                                </th>
+                                <th key={`plo-${plo.id}`} colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-[#2196F3] bg-white">{plo.code}</th>
                             ))}
                         </tr>
-                        {/* Row 2 */}
                         <tr>
-                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white">
-                                Activity
-                            </th>
-                            {coursePlos.map(plo => (
-                                <React.Fragment key={`activity-${plo.id}`}>
-                                    <th rowSpan={3} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white align-middle min-w-[90px]">
-                                        <div className="flex flex-col">
-                                            <span>Weighted</span>
-                                            <span>Total</span>
-                                        </div>
-                                    </th>
-                                    <th rowSpan={3} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white align-middle min-w-[90px]">
-                                        <div className="flex flex-col">
-                                            <span>PLO</span>
-                                            <span>Acheived</span>
-                                        </div>
-                                    </th>
-                                </React.Fragment>
-                            ))}
+                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white">Activity</th>
+                            {coursePlos.map(plo => {
+                                const mappedClos = clos.filter(c => c.plo_id === plo.id);
+                                const activityCodes = assessments
+                                    .filter(a => a.assessment_questions?.some(q => mappedClos.some(c => c.id === q.clo_id)))
+                                    .map(a => a.name)
+                                    .join(', ');
+
+                                return (
+                                    <React.Fragment key={`act-${plo.id}`}>
+                                        <th rowSpan={3} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white align-middle min-w-[90px] text-[10px]">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-blue-600 truncate max-w-[80px]">{activityCodes || 'N/A'}</span>
+                                                <div className="border-t border-slate-200 pt-1">
+                                                    <span>Weighted Total</span>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th rowSpan={3} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white align-middle min-w-[90px] text-[10px]">
+                                            <div className="flex flex-col gap-1">
+                                                <span>PLO Achieved</span>
+                                            </div>
+                                        </th>
+                                    </React.Fragment>
+                                );
+                            })}
                         </tr>
-                        {/* Row 3 */}
                         <tr>
-                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white">
-                                Assigned CLO
-                            </th>
+                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white">Assigned CLO</th>
+                            {/* Handled by rowSpan in Activity row */}
                         </tr>
-                        {/* Row 4 */}
                         <tr>
-                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white">
-                                % Weight
-                            </th>
+                            <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white">% Weight</th>
+                            {/* Handled by rowSpan in Activity row */}
                         </tr>
-                        {/* Row 5 */}
                         <tr>
                             <th colSpan={2} className="border-b border-r border-slate-200 p-2.5 bg-white"></th>
                             {coursePlos.map(plo => (
-                                <th key={`kpi-${plo.id}`} colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white">
-                                    KPI 40%
-                                </th>
+                                <th key={`kpi-${plo.id}`} colSpan={2} className="border-b border-r border-slate-200 p-2.5 text-center font-bold text-slate-800 bg-white text-[10px]">KPI 50%</th>
                             ))}
                         </tr>
-                        {/* Row 6 */}
                         <tr className="bg-[#e4e4e4] border-b border-slate-300">
                             <th className="p-2.5 font-bold text-slate-800 w-[180px] border-r border-slate-300">Registration No.</th>
                             <th className="p-2.5 font-bold text-slate-800 w-[240px] border-r border-slate-300">Name</th>
@@ -344,10 +289,15 @@ export default function PLOAttainment() {
                                         return (
                                             <React.Fragment key={`${student.id}-${plo.id}`}>
                                                 <td className="p-2.5 text-center text-slate-700 border-r border-slate-200">
-                                                    {res.weightedTotal}
+                                                    <div className="flex flex-col">
+                                                        <span>{res.weightedTotal}</span>
+                                                        {showWithMarks === 'with' && (
+                                                            <span className="text-[10px] text-blue-500 font-bold">Show Details</span>
+                                                        )}
+                                                    </div>
                                                 </td>
-                                                <td className="p-2.5 text-center text-slate-700 border-r border-slate-200">
-                                                    {res.isAchieved ? "Y" : "N"}
+                                                <td className="p-2.5 text-center text-slate-700 border-r border-slate-200 font-bold">
+                                                    {res.isAchieved ? <span className="text-green-600">Y</span> : <span className="text-red-600">N</span>}
                                                 </td>
                                             </React.Fragment>
                                         );
@@ -360,9 +310,7 @@ export default function PLOAttainment() {
             </div>
 
             {students.length === 0 && !loading && (
-                <div className="text-center py-12 text-slate-500 text-[13px]">
-                    No student marks data available to calculate PLO attainment.
-                </div>
+                <div className="text-center py-12 text-slate-500 text-[13px]">No student marks data available.</div>
             )}
         </div>
     );

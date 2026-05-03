@@ -7,22 +7,22 @@ const teamMembers = [
         name: "Fahad",
         role: "Project Manager",
         bio: "Driving project delivery and team synchronization with 2 years of proven industry experience orchestrating successful software lifecycles.",
-        // Placeholder images, the user can swap them later
-        image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=800",
+        // Generic male avatar
+        image: "https://avatar.iran.liara.run/public/boy?username=Fahad",
         color: "from-blue-500 to-indigo-600"
     },
     {
         name: "Asim",
         role: "Frontend Developer",
         bio: "Specializing in crafting premium, performant user interfaces with solid React development experience focused on pixel-perfect execution.",
-        image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=800",
+        image: "https://avatar.iran.liara.run/public/boy?username=Asim",
         color: "from-indigo-500 to-sky-500"
     },
     {
         name: "Tayyab",
         role: "Product Developer",
         bio: "Architecting scalable data systems and core platform infrastructure with 2 years of deep product development experience.",
-        image: "https://images.unsplash.com/photo-1542385151-efd9000785a0?auto=format&fit=crop&q=80&w=800",
+        image: "https://avatar.iran.liara.run/public/boy?username=Tayyab",
         color: "from-sky-500 to-blue-500"
     }
 ];

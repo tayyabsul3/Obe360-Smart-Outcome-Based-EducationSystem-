@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Pencil, Trash2, List, FileSpreadsheet, Download, FileText, Settings2, Info, ChevronDown, Calculator, Search, CheckSquare, Loader2, X, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, List, FileSpreadsheet, Download, FileText, Settings2, Info, ChevronDown, Calculator, Search, CheckSquare, Loader2, X, Upload, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import useLoaderStore from '@/store/loaderStore';
@@ -60,13 +60,29 @@ export default function AssessmentManager() {
     const [importAssessmentsOpen, setImportAssessmentsOpen] = useState(false);
     const [importAssessmentsFile, setImportAssessmentsFile] = useState(null);
     const [importingAssessments, setImportingAssessments] = useState(false);
+    const [courseDetails, setCourseDetails] = useState(null);
+
+    // Advanced Import Preview State
+    const [advancedPreviewOpen, setAdvancedPreviewOpen] = useState(false);
+    const [advancedPreviewData, setAdvancedPreviewData] = useState([]);
+    const [advancedHeaderInfo, setAdvancedHeaderInfo] = useState({ assessments: [], questions: [] });
 
     useEffect(() => {
         if (courseId) {
             fetchAssessments();
             fetchCLOs();
+            fetchCourseDetails();
         }
     }, [courseId]);
+
+    const fetchCourseDetails = async () => {
+        try {
+            const res = await fetch(`/api/courses/${courseId}`);
+            if (res.ok) setCourseDetails(await res.json());
+        } catch (error) {
+            console.error("Failed to fetch course details", error);
+        }
+    };
 
     const fetchCLOs = async () => {
         try {
@@ -626,26 +642,94 @@ export default function AssessmentManager() {
         }
     };
 
-    const handleAdvancedFileUpload = async () => {
-        if (!advancedImportFile) {
-            return toast.warning("Please select a file first");
-        }
+    const handleAdvancedFileSelect = (e) => {
+        const file = e.target.files?.[0];
+        if (file) setAdvancedImportFile(file);
+    };
 
-        const formData = new FormData();
-        formData.append('file', advancedImportFile);
+    const handleProcessAdvancedFile = () => {
+        if (!advancedImportFile) return toast.warning("Please select a file first");
 
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                showLoader();
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+                if (data.length < 2) {
+                    hideLoader();
+                    return toast.error("Invalid template format");
+                }
+
+                const row1 = data[0]; // Assessments
+                const row2 = data[1]; // Questions (RegNo, Name, Q1 (10)...)
+
+                const parsedQuestions = [];
+
+                // Skip RegNo (0) and Name (1)
+                for (let i = 2; i < row2.length; i++) {
+                    if (row2[i] && String(row2[i]).includes('(')) {
+                        parsedQuestions.push({
+                            colIndex: i,
+                            label: row2[i].split('\n')[0],
+                            assessmentTitle: row1[i] || (parsedQuestions.length > 0 ? parsedQuestions[parsedQuestions.length - 1].assessmentTitle : "")
+                        });
+                    }
+                }
+
+                const studentsData = [];
+                for (let i = 2; i < data.length; i++) {
+                    const row = data[i];
+                    if (!row[0]) continue; // Skip empty registration numbers
+
+                    const studentMarks = {
+                        reg_no: row[0],
+                        name: row[1],
+                        marks: {}
+                    };
+
+                    parsedQuestions.forEach(q => {
+                        studentMarks.marks[q.colIndex] = row[q.colIndex];
+                    });
+
+                    studentsData.push(studentMarks);
+                }
+
+                setAdvancedHeaderInfo({ assessments: [...new Set(parsedQuestions.map(q => q.assessmentTitle))], questions: parsedQuestions });
+                setAdvancedPreviewData(studentsData);
+                setAdvancedPreviewOpen(true);
+            } catch (error) {
+                console.error(error);
+                toast.error("Failed to parse Excel file");
+            } finally {
+                hideLoader();
+            }
+        };
+        reader.readAsBinaryString(advancedImportFile);
+    };
+
+    const handleConfirmAdvancedImport = async () => {
         setAdvancedUploading(true);
         showLoader();
         try {
-            const res = await fetch(`/api/assessments/course/${courseId}/import-advanced`, {
+            const res = await fetch(`/api/assessments/course/${courseId}/import-advanced-json`, {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    previewData: advancedPreviewData,
+                    headerInfo: advancedHeaderInfo
+                })
             });
 
             const result = await res.json();
 
             if (res.ok) {
-                toast.success("Advanced Import successful", { description: result.message });
+                toast.success("Advanced Import successful");
+                setAdvancedPreviewOpen(false);
                 setImportOpen(false);
                 fetchAssessments();
             } else {
@@ -656,7 +740,6 @@ export default function AssessmentManager() {
             toast.error("Network error during advanced import");
         } finally {
             setAdvancedUploading(false);
-            setAdvancedImportFile(null);
             hideLoader();
         }
     };
@@ -743,13 +826,60 @@ export default function AssessmentManager() {
                     </div>
                     <div>
                         <h1 className="text-2xl font-black text-slate-900 leading-none tracking-tight">Class Activities</h1>
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Manage Course Assessments & Marks</p>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
+                            {courseDetails ? `${courseDetails.code} - ${courseDetails.title}` : 'Loading...'}
+                        </p>
                     </div>
                 </div>
+
+                {courseDetails && (
+                    <div className="flex items-center gap-6 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100">
+                        <div className="text-center">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expected Total</p>
+                            <p className="text-xl font-black text-slate-800">{(parseInt(courseDetails.credit_hours) || 0) * 20}</p>
+                        </div>
+                        <div className="h-8 w-px bg-slate-200"></div>
+                        <div className="text-center">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Total</p>
+                            <p className={cn(
+                                "text-xl font-black",
+                                assessments.reduce((sum, a) => sum + (a.assessment_questions?.reduce((s, q) => s + (q.max_marks || 0), 0) || 0), 0) === (parseInt(courseDetails.credit_hours) || 0) * 20 
+                                ? "text-emerald-600" 
+                                : "text-amber-600"
+                            )}>
+                                {assessments.reduce((sum, a) => sum + (a.assessment_questions?.reduce((s, q) => s + (q.max_marks || 0), 0) || 0), 0)}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-                <Button onClick={handleOpenCreate} className="bg-[#107C41] hover:bg-[#0c5c30] text-white">Add Class Activity</Button>
+            <div className="flex flex-wrap gap-2 items-center">
+                {(() => {
+                    const expectedTotal = (parseInt(courseDetails?.credit_hours) || 0) * 20;
+                    const currentTotal = assessments.reduce((sum, a) => sum + (a.assessment_questions?.reduce((s, q) => s + (q.max_marks || 0), 0) || 0), 0);
+                    const isLimitReached = currentTotal >= expectedTotal && expectedTotal > 0;
+
+                    return (
+                        <div className="flex flex-col gap-2">
+                            <Button 
+                                onClick={handleOpenCreate} 
+                                disabled={isLimitReached}
+                                className={cn(
+                                    "bg-[#107C41] hover:bg-[#0c5c30] text-white",
+                                    isLimitReached && "opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                <Plus size={16} className="mr-2" /> Add Class Activity
+                            </Button>
+                            {isLimitReached && (
+                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                                    <AlertCircle size={12} /> Limit Reached: {currentTotal}/{expectedTotal} marks assigned.
+                                </p>
+                            )}
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* List Section */}
@@ -776,7 +906,6 @@ export default function AssessmentManager() {
                                     <TableHead className="font-bold text-slate-700">Date</TableHead>
                                     <TableHead className="font-bold text-slate-700">Name</TableHead>
                                     <TableHead className="font-bold text-slate-700 text-center">Total Marks</TableHead>
-                                    <TableHead className="font-bold text-slate-700 text-center">GPA %</TableHead>
                                     <TableHead className="text-right font-bold text-slate-700 pr-4">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -795,7 +924,6 @@ export default function AssessmentManager() {
                                             </TableCell>
                                             <TableCell className="text-sm text-[#337AB7] font-bold cursor-pointer hover:underline">{a.title}</TableCell>
                                             <TableCell className="text-center font-bold text-slate-700">{totalMarks}</TableCell>
-                                            <TableCell className="text-center font-bold text-slate-700">{calculatedGpaWeight}%</TableCell>
                                             <TableCell className="text-right pr-4">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -883,23 +1011,19 @@ export default function AssessmentManager() {
                         </div>
 
                         <div className="grid grid-cols-4 gap-6">
-                            <div className="space-y-2">
+                            <div className="col-span-1 space-y-2">
                                 <label className="text-xs font-bold text-slate-600">Total Marks <span className="text-red-500">*</span></label>
                                 <Input
                                     type="number"
+                                    min="1"
+                                    max="1000"
                                     className="h-10 bg-slate-50"
                                     value={formData.total_marks}
-                                    onChange={(e) => setFormData({ ...formData, total_marks: parseFloat(e.target.value) || 0 })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-600">GPA Weight</label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    className="h-10 bg-slate-50"
-                                    value={formData.gpa_weight}
-                                    onChange={(e) => setFormData({ ...formData, gpa_weight: parseFloat(e.target.value) || 0 })}
+                                    onChange={(e) => {
+                                        let val = parseFloat(e.target.value) || 0;
+                                        if (val > 1000) val = 1000;
+                                        setFormData({ ...formData, total_marks: val });
+                                    }}
                                 />
                             </div>
                             <div className="col-span-2 space-y-3">
@@ -950,19 +1074,15 @@ export default function AssessmentManager() {
                                                     <label className="text-xs font-bold text-slate-600">Max Marks <span className="text-red-500">*</span></label>
                                                     <Input
                                                         type="number"
+                                                        min="0"
+                                                        max="100"
                                                         className="h-9 bg-white"
                                                         value={sa.max_marks}
-                                                        onChange={(e) => handleSubActivityChange(sa.id, 'max_marks', parseFloat(e.target.value) || 0)}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-600">% OBE Weight</label>
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        className="h-9 bg-white"
-                                                        value={sa.obe_weight}
-                                                        onChange={(e) => handleSubActivityChange(sa.id, 'obe_weight', parseFloat(e.target.value) || 0)}
+                                                        onChange={(e) => {
+                                                            let val = parseFloat(e.target.value) || 0;
+                                                            if (val > 100) val = 100;
+                                                            handleSubActivityChange(sa.id, 'max_marks', val);
+                                                        }}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -1175,16 +1295,16 @@ export default function AssessmentManager() {
                                         <Input
                                             type="file"
                                             accept=".xlsx, .xls, .csv"
-                                            onChange={(e) => setAdvancedImportFile(e.target.files[0])}
+                                            onChange={handleAdvancedFileSelect}
                                             className="w-64 cursor-pointer"
                                         />
                                         <Button
                                             className="bg-[#b33c2d] hover:bg-[#a03020] min-w-[120px]"
-                                            onClick={handleAdvancedFileUpload}
+                                            onClick={handleProcessAdvancedFile}
                                             disabled={!advancedImportFile || advancedUploading}
                                         >
                                             {advancedUploading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
-                                            Upload File
+                                            Process File
                                         </Button>
                                     </div>
                                     <span
@@ -1298,6 +1418,80 @@ export default function AssessmentManager() {
                 </DialogContent>
             </Dialog>
 
+            {/* Advanced Import Preview Modal */}
+            <Dialog open={advancedPreviewOpen} onOpenChange={setAdvancedPreviewOpen}>
+                <DialogContent className="sm:max-w-[95vw] w-[95vw] h-[95vh] max-h-[95vh] p-0 border-0 shadow-2xl overflow-hidden rounded-3xl flex flex-col">
+                    <DialogHeader className="p-4 bg-[#b33c2d] text-white shrink-0">
+                        <DialogTitle className="text-xl font-black tracking-tight flex items-center justify-between">
+                            <span>Review Advanced Import Data</span>
+                            <span className="text-xs bg-white/20 px-3 py-1 rounded-full">{advancedPreviewData.length} Students Detected</span>
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+                        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
+                            <div className="flex gap-2">
+                                <Button className="bg-[#b33c2d] hover:bg-[#a03020] h-9" onClick={handleConfirmAdvancedImport} disabled={advancedUploading}>
+                                    {advancedUploading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+                                    Confirm & Save Marks
+                                </Button>
+                                <Button variant="outline" className="h-9" onClick={() => setAdvancedPreviewOpen(false)}>
+                                    Cancel
+                                </Button>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Detected Activities:</span>
+                                <div className="flex gap-2">
+                                    {advancedHeaderInfo.assessments.map((a, i) => (
+                                        <Badge key={i} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100 font-bold">{a}</Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-auto custom-scrollbar p-0">
+                            <Table className="relative min-w-max border-separate border-spacing-0">
+                                <TableHeader className="sticky top-0 z-20 bg-slate-100">
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="font-bold text-slate-700 pl-4 uppercase text-[10px] w-[150px] sticky left-0 bg-slate-100 z-30 border-b border-r border-slate-200">Registration No.</TableHead>
+                                        <TableHead className="font-bold text-slate-700 uppercase text-[10px] w-[200px] sticky left-[150px] bg-slate-100 z-30 border-b border-r border-slate-200">Name</TableHead>
+                                        {advancedHeaderInfo.questions.map((q, idx) => (
+                                            <TableHead key={idx} className="font-bold text-slate-700 text-center uppercase text-[10px] border-b border-r border-slate-200 px-4 min-w-[120px]">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-blue-600 font-black">{q.assessmentTitle}</span>
+                                                    <span className="text-slate-500">{q.label}</span>
+                                                </div>
+                                            </TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {advancedPreviewData.map((student, sIdx) => (
+                                        <TableRow key={sIdx} className="hover:bg-slate-50/50">
+                                            <TableCell className="font-mono text-xs font-bold pl-4 sticky left-0 bg-white z-10 border-b border-r border-slate-100">{student.reg_no}</TableCell>
+                                            <TableCell className="text-xs font-bold text-slate-600 uppercase sticky left-[150px] bg-white z-10 border-b border-r border-slate-100">{student.name}</TableCell>
+                                            {advancedHeaderInfo.questions.map((q, qIdx) => {
+                                                const val = student.marks[q.colIndex];
+                                                const isAbsent = String(val).toUpperCase() === 'A' || String(val).toUpperCase() === 'AB';
+                                                return (
+                                                    <TableCell key={qIdx} className="text-center text-xs border-b border-r border-slate-100">
+                                                        {isAbsent ? (
+                                                            <Badge className="bg-red-50 text-red-600 border-red-100 text-[10px]">Absent</Badge>
+                                                        ) : (
+                                                            <span className="font-bold text-slate-800">{val || 0}</span>
+                                                        )}
+                                                    </TableCell>
+                                                );
+                                            })}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <style>{`
                 @media print {
                     body * {
@@ -1331,7 +1525,6 @@ export default function AssessmentManager() {
                             <TableHead className="font-bold text-slate-900">Name</TableHead>
                             <TableHead className="font-bold text-slate-900">Date</TableHead>
                             <TableHead className="text-center font-bold text-slate-900">Total Marks</TableHead>
-                            <TableHead className="text-center font-bold text-slate-900">GPA %</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1341,7 +1534,6 @@ export default function AssessmentManager() {
                                 <TableCell className="font-bold">{a.title}</TableCell>
                                 <TableCell>{a.date ? new Date(a.date).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell className="text-center">{a.assessment_questions?.reduce((s, q) => s + q.max_marks, 0)}</TableCell>
-                                <TableCell className="text-center">{a.gpa_weight}%</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

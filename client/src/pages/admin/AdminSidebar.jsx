@@ -24,10 +24,15 @@ export default function AdminSidebar() {
     ];
 
     return (
-        <aside className="w-[220px] h-screen sticky top-0 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0">
-            <div className="p-4 bg-slate-100/5">
-                <h2 className="text-xl font-black text-white tracking-widest uppercase">Administration</h2>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter mt-1">Institutional OBE Management</p>
+        <aside className="w-[220px] h-[100dvh] sticky top-0 bg-slate-900 text-slate-300 hidden md:flex flex-col border-r border-slate-800 shrink-0">
+            <div className="p-5 flex flex-col gap-1 border-b border-slate-800/50 bg-slate-950/20 mb-2">
+                <h2 className="text-lg font-black text-slate-100 tracking-wide uppercase flex items-center gap-2">
+                    <div className="w-1.5 h-5 bg-blue-600 rounded-full shadow-lg shadow-blue-500/30"></div>
+                    Administration
+                </h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed ml-3.5">
+                    Institutional OBE <br/> Management
+                </p>
             </div>
 
             <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto custom-scrollbar">

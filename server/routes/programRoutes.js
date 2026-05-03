@@ -12,6 +12,8 @@ router.post('/bulk', createProgramsBulk);
 router.get('/:programId/plos', getPLOs);
 router.post('/plos', createPLO);
 router.post('/plos/bulk', createPLOsBulk);
+router.get('/plos/bulk', createPLOsBulk);
+router.get('/meta/plos/count', require('../controllers/programController').getAllPLOsCount);
 router.get('/plos/course/:courseId', require('../controllers/programController').getPLOsByCourse);
 
 // Programs

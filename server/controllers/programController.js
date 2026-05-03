@@ -101,11 +101,24 @@ const getPLOsByCourse = async (req, res) => {
     }
 };
 
+const getAllPLOsCount = async (req, res) => {
+    try {
+        const { count, error } = await supabaseAdmin
+            .from('plos')
+            .select('*', { count: 'exact', head: true });
+
+        if (error) throw error;
+        res.json({ count: count || 0 });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 const createPLO = async (req, res) => {
     const { program_id, title, description } = req.body;
     
-    if (!title || !/^PLO-\d+$/.test(title)) {
-        return res.status(400).json({ error: "Invalid PLO title format. Must be formatted like 'PLO-1', 'PLO-2', etc." });
+    if (!title) {
+        return res.status(400).json({ error: "Title is required." });
     }
 
     try {
@@ -144,9 +157,9 @@ const createPLOsBulk = async (req, res) => {
             return res.status(400).json({ error: "Invalid data." });
         }
 
-        const isValid = plos.every(p => p.title && /^PLO-\d+$/.test(p.title));
+        const isValid = plos.every(p => p.title);
         if (!isValid) {
-            return res.status(400).json({ error: "Invalid PLO title format in bulk array. All must be formatted like 'PLO-1', 'PLO-2', etc." });
+            return res.status(400).json({ error: "Title is required for all PLOs." });
         }
 
         // 1. Get current max number
@@ -202,6 +215,9 @@ const updateProgram = async (req, res) => {
 const deleteProgram = async (req, res) => {
     const { id } = req.params;
     try {
+        // First delete associated PLOs
+        await supabaseAdmin.from('plos').delete().eq('program_id', id);
+
         const { error } = await supabaseAdmin
             .from('programs')
             .delete()
@@ -257,6 +273,7 @@ module.exports = {
     deleteProgram,
     getPLOs,
     getPLOsByCourse,
+    getAllPLOsCount,
     createPLO,
     createPLOsBulk,
     updatePLO,

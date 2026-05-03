@@ -426,7 +426,7 @@ export default function ConsolidatedReport() {
                                         cursor={{ fill: '#F1F5F9' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="percentage" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                                    <Bar dataKey="percentage" radius={[4, 4, 0, 0]} barSize={40} maxBarSize={60}>
                                         <LabelList dataKey="percentage" position="top" formatter={(val) => `${val}%`} style={{ fill: '#1E293B', fontWeight: 800, fontSize: 12 }} />
                                         {classCLOData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.fill} />

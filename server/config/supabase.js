@@ -10,6 +10,11 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.warn('Supabase URL or Service Role Key is missing in .env');
 }
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 module.exports = supabaseAdmin;

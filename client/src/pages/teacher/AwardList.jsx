@@ -226,11 +226,11 @@ export default function AwardList() {
                                 <TableHead className="w-[60px] text-center font-black py-4">Sr.</TableHead>
                                 <TableHead className="font-black px-6">Registration Number</TableHead>
                                 <TableHead className="font-black">Student Full Name</TableHead>
-                                <TableHead className="text-center font-black">Sessional (20)</TableHead>
-                                <TableHead className="text-center font-black">Midterm (30)</TableHead>
-                                <TableHead className="text-center font-black">Final Exam (50)</TableHead>
-                                <TableHead className="text-center font-black">Total (100)</TableHead>
-                                <TableHead className="text-center font-black bg-slate-100/50">Final Total</TableHead>
+                                <TableHead className="text-center font-black">Sessional ({weights.SESSIONAL.toFixed(0)})</TableHead>
+                                <TableHead className="text-center font-black">Midterm ({weights.MID.toFixed(0)})</TableHead>
+                                <TableHead className="text-center font-black">Final Exam ({weights.FINAL.toFixed(0)})</TableHead>
+                                <TableHead className="text-center font-black">Total (100%)</TableHead>
+                                <TableHead className="text-center font-black bg-slate-100/50">Final Total ({courseTotalMarks})</TableHead>
                                 <TableHead className="text-center font-black">Grade</TableHead>
                             </TableRow>
                         </TableHeader>

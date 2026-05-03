@@ -143,9 +143,9 @@ export default function CLOAttainmentGraph() {
                             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-100" />
                             <XAxis 
                                 dataKey="clo" 
-                                axisLine={false} 
-                                tickLine={false} 
-                                tick={{ fill: 'hsl(var(--muted-foreground))', fontWeight: 700, fontSize: 12 }}
+                                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 500 }}
+                                axisLine={false}
+                                tickLine={false}
                                 dy={10}
                             />
                             <YAxis 
@@ -162,7 +162,8 @@ export default function CLOAttainmentGraph() {
                             <Bar 
                                 dataKey="attainment" 
                                 radius={[6, 6, 0, 0]} 
-                                barSize={60}
+                                barSize={40}
+                                maxBarSize={60}
                             >
                                 {chartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={getBarColor(entry.attainment)} />

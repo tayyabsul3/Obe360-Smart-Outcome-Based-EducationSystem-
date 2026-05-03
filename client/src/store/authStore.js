@@ -61,6 +61,41 @@ const useAuthStore = create((set) => ({
 
             if (!response.ok) throw new Error(data.error);
 
+            if (data.requires2FA) {
+                return { success: true, requires2FA: true, email: data.email };
+            }
+
+            const { user, session, role, isFirstLogin } = data;
+
+            if (session) {
+                await supabase.auth.setSession(session);
+            }
+
+            set({
+                user,
+                session,
+                role: role || 'teacher',
+                isFirstLogin: isFirstLogin || false,
+                loading: false
+            });
+
+            return { success: true, isFirstLogin: isFirstLogin || false };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    verify2FA: async (email, code) => {
+        try {
+            const response = await fetch('/api/verify-2fa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+
             const { user, session, role, isFirstLogin } = data;
 
             if (session) {
@@ -119,20 +154,39 @@ const useAuthStore = create((set) => ({
         }
     },
 
-    updatePassword: async (userId, newPassword) => {
+    updatePassword: async (userId, newPassword, oldPassword, email) => {
         try {
             const response = await fetch('/api/update-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ userId, newPassword })
+                body: JSON.stringify({ userId, newPassword, oldPassword, email })
             });
 
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
 
             // Refresh session to reflect changes
+            await useAuthStore.getState().checkSession();
+
+            return { success: true, message: data.message };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    updateProfile: async (userId, fullName) => {
+        try {
+            const response = await fetch('/api/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, fullName })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+
             await useAuthStore.getState().checkSession();
 
             return { success: true, message: data.message };

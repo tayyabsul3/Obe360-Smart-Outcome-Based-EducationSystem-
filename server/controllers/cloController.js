@@ -88,6 +88,7 @@ const createCLO = async (req, res) => {
 
         res.json(clo);
     } catch (error) {
+        console.error("CLO CREATE ERROR:", error);
         res.status(400).json({ error: error.message });
     }
 };
@@ -129,6 +130,7 @@ const updateCLO = async (req, res) => {
 
         res.json(data);
     } catch (error) {
+        console.error("CLO UPDATE ERROR:", error);
         res.status(400).json({ error: error.message });
     }
 };
@@ -148,10 +150,69 @@ const deleteCLO = async (req, res) => {
     }
 };
 
+const mapCLOtoPLO = async (req, res) => {
+    const { clo_id, plo_id, learning_type, level, emphasis_level } = req.body;
+    try {
+        // Delete existing mapping if any
+        await supabaseAdmin.from('clo_plo_mapping').delete().eq('clo_id', clo_id);
+
+        if (plo_id && plo_id !== 'none') {
+            const { data, error } = await supabaseAdmin
+                .from('clo_plo_mapping')
+                .insert([{
+                    clo_id,
+                    plo_id,
+                    learning_type: learning_type || 'Cognitive',
+                    level: level || 'C1',
+                    emphasis_level: emphasis_level || 'Medium'
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            res.json(data);
+        } else {
+            res.json({ message: "Mapping removed" });
+        }
+    } catch (error) {
+        console.error("CLO MAPPING ERROR:", error);
+        res.status(400).json({ error: error.message });
+    }
+};
+
+const bulkCreateCLOs = async (req, res) => {
+    const { course_id, clos } = req.body; // Array of { code, description, type, title }
+    try {
+        if (!clos || !Array.isArray(clos)) throw new Error("Invalid CLO data");
+
+        const formattedClos = clos.map(c => ({
+            course_id,
+            code: c.code,
+            description: c.description,
+            title: c.title || c.description.substring(0, 50),
+            type: c.type || 'Cognitive',
+            is_active: true
+        }));
+
+        const { data, error } = await supabaseAdmin
+            .from('course_learning_outcomes')
+            .insert(formattedClos)
+            .select();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        console.error("CLO BULK CREATE ERROR:", error);
+        res.status(400).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getCLOs,
     getCLOMappings,
     createCLO,
     updateCLO,
-    deleteCLO
+    deleteCLO,
+    mapCLOtoPLO,
+    bulkCreateCLOs
 };

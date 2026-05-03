@@ -21,6 +21,7 @@ router.get('/:assessmentId/marks', controller.getMarks);
 router.post('/marks', controller.saveMarks);
 router.post('/:assessmentId/import', upload.single('file'), controller.importOutcomes);
 router.post('/course/:courseId/import-advanced', upload.single('file'), controller.importAdvancedOutcomes);
+router.post('/course/:courseId/import-advanced-json', controller.importAdvancedJson);
 router.post('/course/:courseId/import-definitions', upload.single('file'), controller.importAssessments);
 router.get('/course/:courseId/export-all', controller.exportOutcomes);
 

@@ -120,6 +120,16 @@ export default function Assignments() {
             if (res.ok) {
                 toast.success("Teacher assigned successfully");
                 loadData();
+            } else {
+                const errorData = await res.json();
+                toast.error(`Assignment failed: ${errorData.error}`);
+                console.error("Assignment Payload:", {
+                    course_id: courseId,
+                    teacher_id: teacherId,
+                    program_id: selectedProgramId,
+                    semester_id: workingSemesterId,
+                    semester_number: semesterNum
+                });
             }
         } catch (err) {
             console.error(err);
@@ -137,7 +147,7 @@ export default function Assignments() {
                 method: 'DELETE',
             });
             if (res.ok) {
-                toast.success("Specialist unassigned");
+                toast.success("Teacher unassigned");
                 loadData();
             } else {
                 toast.error("Failed to unassign");
@@ -154,11 +164,20 @@ export default function Assignments() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {!workingSemesterId && (
+                <div className="bg-orange-50 border-2 border-orange-200 p-6 rounded-[2.5rem] flex items-center gap-4 text-orange-800">
+                    <AlertCircle className="shrink-0" />
+                    <div>
+                        <p className="font-black uppercase text-xs tracking-widest">No Academic Session Active</p>
+                        <p className="text-sm font-medium opacity-80">Please select an academic session (Working Semester) in the Settings to enable course assignments.</p>
+                    </div>
+                </div>
+            )}
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100">
                 <div className="space-y-1">
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Course Allotment</h1>
-                    <p className="text-sm text-slate-500 font-medium">Assign faculty specialists to courses across the 8-semester curriculum.</p>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Course Allocation</h1>
+                    <p className="text-sm text-slate-500 font-medium">Assign faculty teachers to courses across the 8-semester curriculum.</p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -166,11 +185,11 @@ export default function Assignments() {
                         <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Select Program</Label>
                         <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                             <SelectTrigger className="h-12 w-[220px] rounded-2xl bg-slate-50 border-0 shadow-none font-bold text-slate-700">
-                                <SelectValue placeholder="Program" />
+                                <SelectValue placeholder="Select Program" />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
                                 {programs.map(p => (
-                                    <SelectItem key={p.id} value={p.id} className="font-bold">{p.code} Catalog</SelectItem>
+                                    <SelectItem key={p.id} value={p.id} className="font-bold">{p.code}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -246,14 +265,22 @@ export default function Assignments() {
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="outline" className="w-full h-12 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all flex items-center justify-center gap-2">
                                                     <UserPlus size={16} />
-                                                    {courseAssignments.length > 0 ? 'Add Instructor' : 'Assign Specialist'}
+                                                    {courseAssignments.length > 0 ? 'Add Instructor' : 'Assign Teacher'}
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="center" className="rounded-2xl p-2 min-w-[240px] shadow-2xl max-h-[300px] overflow-auto">
                                                 <DropdownMenuLabel className="text-[10px] uppercase font-black tracking-widest text-slate-400 pb-2">Select Faculty Member</DropdownMenuLabel>
                                                 {teachers.filter(t => !courseAssignments.find(a => a.teacher_id === t.id)).map(t => (
-                                                    <DropdownMenuItem key={t.id} onClick={() => handleAssign(item.course_id, t.id, item.semester)} className="rounded-xl h-10 font-bold">
-                                                        {t.full_name || t.email}
+                                                    <DropdownMenuItem key={t.id} onClick={() => handleAssign(item.course_id, t.id, item.semester)} className="rounded-xl h-12 font-bold px-4 hover:bg-blue-50">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-[10px]">
+                                                                {t.full_name?.charAt(0) || 'T'}
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs">{t.full_name || "No Name"}</span>
+                                                                <span className="text-[10px] text-slate-400 font-normal">{t.email}</span>
+                                                            </div>
+                                                        </div>
                                                     </DropdownMenuItem>
                                                 ))}
                                                 {teachers.filter(t => !courseAssignments.find(a => a.teacher_id === t.id)).length === 0 && (

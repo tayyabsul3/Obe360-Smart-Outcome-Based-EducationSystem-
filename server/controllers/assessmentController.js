@@ -663,7 +663,15 @@ const exportOutcomes = async (req, res) => {
         if (assessments && assessments.length > 0) {
             const { data, error: mError } = await supabaseAdmin
                 .from('student_marks')
-                .select('*')
+                .select(`
+                    *,
+                    assessment_questions (
+                        id,
+                        clo_id,
+                        max_marks,
+                        not_for_obe
+                    )
+                `)
                 .in('assessment_id', assessments.map(a => a.id));
 
             if (mError) throw mError;
@@ -682,6 +690,130 @@ const exportOutcomes = async (req, res) => {
     }
 };
 
+const importAdvancedJson = async (req, res) => {
+    const { courseId } = req.params;
+    const { previewData, headerInfo } = req.body;
+
+    try {
+        if (!previewData || !headerInfo) throw new Error("Missing preview data or header info");
+
+        // 1. Sync Assessments
+        const assessmentIdMap = {};
+        for (const title of headerInfo.assessments) {
+            let { data: assessment } = await supabaseAdmin
+                .from('assessments')
+                .select('id')
+                .eq('course_id', courseId)
+                .eq('title', title)
+                .single();
+
+            if (!assessment) {
+                const { data: neu, error: createError } = await supabaseAdmin
+                    .from('assessments')
+                    .insert([{ 
+                        course_id: courseId, 
+                        title, 
+                        type: 'Assignment',
+                        date: new Date().toISOString().split('T')[0]
+                    }])
+                    .select().single();
+                if (createError) throw createError;
+                assessment = neu;
+            }
+            assessmentIdMap[title] = assessment.id;
+        }
+
+        // 2. Sync Questions
+        const questionIdMap = {}; // colIndex -> questionId
+        for (const q of headerInfo.questions) {
+            const assessmentId = assessmentIdMap[q.assessmentTitle];
+            // label format is usually "Q1 (10)"
+            const qNum = q.label.split('(')[0].trim();
+            const maxMarks = parseInt(q.label.match(/\((\d+)\)/)?.[1] || "10");
+
+            let { data: question } = await supabaseAdmin
+                .from('assessment_questions')
+                .select('id')
+                .eq('assessment_id', assessmentId)
+                .eq('question_number', qNum)
+                .single();
+
+            if (!question) {
+                const { data: neu, error: createError } = await supabaseAdmin
+                    .from('assessment_questions')
+                    .insert([{
+                        assessment_id: assessmentId,
+                        question_number: qNum,
+                        max_marks: maxMarks
+                    }])
+                    .select().single();
+                if (createError) throw createError;
+                question = neu;
+            }
+            questionIdMap[q.colIndex] = question.id;
+        }
+
+        // 3. Map Students
+        const { data: enrollments } = await supabaseAdmin
+            .from('enrollments')
+            .select('student_id, students ( id, reg_no )')
+            .eq('course_id', courseId);
+
+        const studentMap = {};
+        enrollments.forEach(e => {
+            if (e.students && e.students.reg_no) {
+                studentMap[e.students.reg_no.toUpperCase()] = e.students.id;
+            }
+        });
+
+        // 4. Prepare Marks Updates
+        const updates = [];
+        const errors = [];
+
+        previewData.forEach(student => {
+            const studentId = studentMap[student.reg_no.toUpperCase()];
+            if (!studentId) {
+                errors.push(`Student ${student.reg_no} not found`);
+                return;
+            }
+
+            for (const colIndex in student.marks) {
+                const qId = questionIdMap[colIndex];
+                const val = student.marks[colIndex];
+                const qInfo = headerInfo.questions.find(q => q.colIndex == colIndex);
+
+                if (qId && val !== undefined && val !== "") {
+                    let markStr = String(val).trim().toUpperCase();
+                    let isAbsent = (markStr === 'A' || markStr === 'AB');
+                    let marks = isAbsent ? 0 : (parseFloat(markStr) || 0);
+
+                    updates.push({
+                        student_id: studentId,
+                        question_id: qId,
+                        assessment_id: assessmentIdMap[qInfo.assessmentTitle],
+                        obtained_marks: marks,
+                        is_absent: isAbsent
+                    });
+                }
+            }
+        });
+
+        if (updates.length > 0) {
+            const { error: upsertError } = await supabaseAdmin
+                .from('student_marks')
+                .upsert(updates, { onConflict: 'student_id, question_id' });
+
+            if (upsertError) throw upsertError;
+        }
+
+        res.json({ message: "Import successful", count: updates.length, errors: errors.length > 0 ? errors : undefined });
+
+    } catch (error) {
+        console.error("Advanced JSON Import Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     getAssessments,
     createAssessment,
@@ -694,6 +826,7 @@ module.exports = {
     saveMarks,
     importOutcomes,
     importAdvancedOutcomes,
+    importAdvancedJson,
     importAssessments,
     exportOutcomes
 };

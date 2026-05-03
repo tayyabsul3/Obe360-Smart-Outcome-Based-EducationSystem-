@@ -4,7 +4,7 @@ import AdminHeader from './AdminHeader';
 
 export default function AdminRootLayout() {
     return (
-        <div className="flex h-screen bg-[#F4F7F9] overflow-hidden font-sans">
+        <div className="flex h-[100dvh] w-full bg-[#F4F7F9] overflow-hidden font-sans">
             <AdminSidebar />
 
             <div className="flex-1 flex flex-col min-w-0">

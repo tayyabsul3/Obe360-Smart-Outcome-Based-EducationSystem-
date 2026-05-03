@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, ReferenceLine, Cell
 } from 'recharts';
 import { User as UserIcon, Eye } from 'lucide-react';
@@ -32,8 +31,8 @@ export default function PLOAttainmentGraph() {
             const [cRes, mRes, pRes, clRes] = await Promise.all([
                 fetch(`/api/courses/${courseId}`),
                 fetch(`/api/assessments/course/${courseId}/export-all`),
-                fetch(`/api/plos`),
-                fetch(`/api/clos/course/${courseId}`)
+                fetch(`/api/programs/plos/course/${courseId}`),
+                fetch(`/api/clos/${courseId}`)
             ]);
 
             if (cRes.ok) setCourse(await cRes.json());
@@ -77,7 +76,7 @@ export default function PLOAttainmentGraph() {
                 let totalWeight = 0;
 
                 mappedClos.forEach(clo => {
-                    const cloMarks = marks.filter(m => m.student_id === student.id);
+                    const cloMarks = marks.filter(m => m.student_id === student.id && m.assessment_questions?.clo_id === clo.id);
                     const sum = cloMarks.reduce((acc, curr) => {
                         const max = curr.assessment_questions?.max_marks || 10;
                         return acc + (curr.obtained_marks / max) * 100;
@@ -89,7 +88,7 @@ export default function PLOAttainmentGraph() {
                 });
 
                 const weightedTotal = totalWeight > 0 ? totalWeightedScore / totalWeight : 0;
-                if (weightedTotal >= 40) achievementCount++;
+                if (weightedTotal >= 50) achievementCount++;
             });
 
             return {
@@ -240,59 +239,7 @@ export default function PLOAttainmentGraph() {
                     </h3>
                 </div>
 
-                {/* The Chart */}
-                <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data} margin={{ top: 20, right: 150, left: 10, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
-
-                            <XAxis
-                                dataKey="name"
-                                axisLine={{ stroke: '#999' }}
-                                tickLine={{ stroke: '#999' }}
-                                tick={{ fill: '#333', fontSize: 11 }}
-                                dy={10}
-                            />
-
-                            <YAxis
-                                axisLine={{ stroke: '#999' }}
-                                tickLine={{ stroke: '#999' }}
-                                tick={{ fill: '#333', fontSize: 11 }}
-                                domain={[0, 100]}
-                                tickCount={11} // 0, 10, 20... 100
-                                label={{ value: '% Attainment', angle: -90, position: 'insideLeft', dx: -10, dy: 50, style: { textAnchor: 'middle', fill: '#555', fontSize: 13 } }}
-                            />
-
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-
-                            {/* Threshold Line at 50% */}
-                            <ReferenceLine
-                                y={50}
-                                stroke="#ccc"
-                                strokeopacity={0.5}
-                                label={{
-                                    position: 'right',
-                                    value: 'Attainment Threshold',
-                                    fill: '#999',
-                                    fontSize: 11,
-                                    dx: 10
-                                }}
-                            />
-
-                            <Bar
-                                dataKey="value"
-                                barSize={250} // Make bars massive to match screenshot
-                            >
-                                {data.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={colors[index % colors.length]}
-                                    />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
+                {/* The Chart - Radar Chart */}
 
                 {data.length === 0 && !loading && (
                     <div className="text-center py-12 text-slate-500 text-[13px]">

@@ -49,6 +49,34 @@ const sendInvitationEmail = async (email, password, fullName) => {
   }
 };
 
+const send2FAEmail = async (email, otpCode, fullName) => {
+  try {
+    const mailOptions = {
+      from: process.env.SMTP_FROM_EMAIL || '"OBE360 Security" <noreply@obe360.com>',
+      to: email,
+      subject: 'Your OBE360 Login Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+          <h2 style="color: #333;">Login Verification Code</h2>
+          <p>Hello ${fullName || 'User'},</p>
+          <p>Please use the following 6-digit code to complete your login. This code will expire in 10 minutes.</p>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
+            <h1 style="margin: 0; letter-spacing: 5px; color: #007bff; font-size: 32px;">${otpCode}</h1>
+          </div>
+          <p style="font-size: 12px; color: #777; margin-top: 30px;">If you did not attempt to login, please change your password immediately.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('2FA Email Error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   sendInvitationEmail,
+  send2FAEmail,
 };

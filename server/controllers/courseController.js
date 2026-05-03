@@ -7,7 +7,7 @@ const getCourses = async (req, res) => {
         const { data, error } = await supabaseAdmin
             .from('courses')
             .select('*')
-            .order('code', { ascending: true });
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
         res.json(data);

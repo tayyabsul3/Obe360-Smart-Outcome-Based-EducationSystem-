@@ -163,7 +163,10 @@ export default function MyCourses() {
                             <p className="text-sm text-slate-500 font-medium max-w-sm">Use the sidebar tools to manage CLOs, define assessments, and track student attainment for this course.</p>
                         </div>
                         <div className="flex gap-4">
-                            <Button className="h-14 px-8 rounded-2xl bg-slate-900 border-0 shadow-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all">
+                            <Button 
+                                onClick={() => navigate(`/teacher/course/${activeCourseId}/assessments`)}
+                                className="h-14 px-8 rounded-2xl bg-slate-900 border-0 shadow-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all"
+                            >
                                 Define Assessments
                             </Button>
                         </div>

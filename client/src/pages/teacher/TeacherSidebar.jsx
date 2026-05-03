@@ -113,6 +113,16 @@ export default function TeacherSidebar() {
             ]
         },
         {
+            label: 'PLOs',
+            icon: Target,
+            isAccordion: true,
+            value: "plos",
+            subItems: [
+                { label: 'PLOs List', to: `/teacher/course/${activeCourseId}/reports/plo` },
+                { label: 'PLOs Attainment', to: `/teacher/course/${activeCourseId}/plos/attainment` },
+            ]
+        },
+        {
             label: 'Assesment / Marks',
             icon: CheckSquare,
             isAccordion: true,

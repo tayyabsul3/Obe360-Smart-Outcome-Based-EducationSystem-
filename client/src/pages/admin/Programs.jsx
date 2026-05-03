@@ -104,10 +104,34 @@ export default function Programs() {
     const [assigningCourse, setAssigningCourse] = useState(false);
     const [courseSearch, setCourseSearch] = useState('');
 
+    const [totalPlos, setTotalPlos] = useState(0);
+    const [activeBatches, setActiveBatches] = useState(0);
+
     useEffect(() => {
         fetchPrograms();
         fetchAllCourses();
+        fetchStats();
     }, []);
+
+    const fetchStats = async () => {
+        try {
+            const [plosRes, batchesRes] = await Promise.all([
+                fetch('/api/programs/meta/plos/count'),
+                fetch('/api/students/meta/batches')
+            ]);
+            
+            if (plosRes.ok) {
+                const plosData = await plosRes.json();
+                setTotalPlos(plosData.count);
+            }
+            if (batchesRes.ok) {
+                const batchesData = await batchesRes.json();
+                setActiveBatches(batchesData.length);
+            }
+        } catch(e) {
+            console.error('Error fetching stats', e);
+        }
+    };
 
     useEffect(() => {
         if (selectedProgram) {
@@ -368,8 +392,8 @@ export default function Programs() {
         e.preventDefault();
         if (!selectedProgram) return;
 
-        if (!/^PLO-\d+$/.test(newPloTitle)) {
-            toast.error("Invalid Format", { description: "Title must be exactly formatted like 'PLO-1'" });
+        if (!newPloTitle) {
+            toast.error("Validation Error", { description: "Title must be provided" });
             return;
         }
 
@@ -409,8 +433,8 @@ export default function Programs() {
     };
 
     const saveEditPlo = async () => {
-        if (!/^PLO-\d+$/.test(editPloTitle)) {
-            toast.error("Invalid Format", { description: "Title must be exactly formatted like 'PLO-1'" });
+        if (!editPloTitle) {
+            toast.error("Validation Error", { description: "Title must be provided" });
             return;
         }
 
@@ -631,9 +655,9 @@ export default function Programs() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {[
                             { label: 'Total Degrees', value: programs.length, icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50' },
-                            { label: 'Total PLOs', value: '48', icon: List, color: 'text-orange-600', bg: 'bg-orange-50' },
+                            { label: 'Total PLOs', value: totalPlos, icon: List, color: 'text-orange-600', bg: 'bg-orange-50' },
                             { label: 'Course Catalog', value: allCourses.length, icon: GitMerge, color: 'text-purple-600', bg: 'bg-purple-50' },
-                            { label: 'Active Batches', value: '12', icon: Users, color: 'text-green-600', bg: 'bg-green-50' },
+                            { label: 'Active Batches', value: activeBatches, icon: Users, color: 'text-green-600', bg: 'bg-green-50' },
                         ].map((stat, i) => (
                             <Card key={i} className="border-0 shadow-sm hover:shadow-md transition-all rounded-3xl overflow-hidden">
                                 <CardContent className="p-6 flex items-center gap-4">
@@ -727,7 +751,7 @@ export default function Programs() {
                             <TabsTrigger value="study-plan" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest h-full flex-1 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all gap-2">
                                 <FileSpreadsheet size={18} /> Study Plan
                             </TabsTrigger>
-                            <TabsTrigger value="settings" className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest h-full flex-1 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all gap-2">
+                            <TabsTrigger value="settings" disabled className="rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest h-full flex-1 data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all gap-2 opacity-50 cursor-not-allowed">
                                 <Settings2 size={18} /> Configuration
                             </TabsTrigger>
                         </TabsList>
@@ -1110,8 +1134,14 @@ export default function Programs() {
                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Duration (Years)</Label>
                                 <Input
                                     type="number"
+                                    min="1"
+                                    max="5"
                                     value={duration}
-                                    onChange={(e) => setDuration(e.target.value)}
+                                    onChange={(e) => {
+                                        let val = parseInt(e.target.value) || 0;
+                                        if (val > 5) val = 5;
+                                        setDuration(val);
+                                    }}
                                     required
                                     className="h-14 rounded-2xl bg-slate-50 border-0 focus:bg-white text-slate-800 font-bold"
                                 />

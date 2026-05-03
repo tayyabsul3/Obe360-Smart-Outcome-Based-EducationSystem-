@@ -34,7 +34,7 @@ export default function PLOReport() {
             const [cRes, mRes, pRes, clRes] = await Promise.all([
                 fetch(`/api/courses/${courseId}`),
                 fetch(`/api/assessments/course/${courseId}/export-all`),
-                fetch(`/api/plos`),
+                fetch(`/api/programs/plos/course/${courseId}`),
                 fetch(`/api/clos/${courseId}`)
             ]);
 
@@ -166,13 +166,6 @@ export default function PLOReport() {
             const { studentResults, activePlos } = getAttainmentData();
             const doc = new jsPDF('landscape');
 
-            // Wait for chart image
-            let chartImage = null;
-            if (chartRef.current) {
-                const canvas = await html2canvas(chartRef.current, { scale: 2 });
-                chartImage = canvas.toDataURL('image/jpeg', 1.0);
-            }
-
             // Header
             doc.setFontSize(16);
             doc.text("Unified PLO Attainment Report", 14, 15);
@@ -180,13 +173,6 @@ export default function PLOReport() {
             doc.text(`${course?.code || ''} - ${course?.title || ''}`, 14, 22);
 
             let currentY = 30;
-
-            // Add Chart
-            if (chartImage) {
-                // Adjust chart size to fit landscape A4 comfortably
-                doc.addImage(chartImage, 'JPEG', 14, currentY, 260, 90);
-                currentY += 95;
-            }
 
             // Add Table
             const head = [
@@ -299,56 +285,6 @@ export default function PLOReport() {
             )}
 
             {/* Graph Section */}
-            {activePlos.length > 0 && (
-                <div className="border border-slate-200 rounded-xl shadow-sm mb-8 overflow-hidden bg-white">
-                    <div className="bg-slate-50 p-4 border-b border-slate-200">
-                        <h3 className="font-bold text-slate-700">Class PLO Achievement Summary</h3>
-                    </div>
-                    <div className="p-6" ref={chartRef}>
-                        <div className="h-[350px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={graphData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis
-                                        dataKey="name"
-                                        axisLine={{ stroke: '#cbd5e1' }}
-                                        tickLine={false}
-                                        tick={{ fill: '#475569', fontSize: 12, fontWeight: 500 }}
-                                        dy={10}
-                                    />
-                                    <YAxis
-                                        domain={[0, 100]}
-                                        axisLine={{ stroke: '#cbd5e1' }}
-                                        tickLine={false}
-                                        tick={{ fill: '#475569', fontSize: 12 }}
-                                        label={{ value: '% Students Achieved (>=50%)', angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 12 } }}
-                                    />
-                                    <RechartsTooltip
-                                        cursor={{ fill: '#f1f5f9' }}
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                return (
-                                                    <div className="bg-white border shadow-lg rounded-lg p-3">
-                                                        <p className="font-bold text-slate-800 text-sm mb-1">{payload[0].payload.fullName}</p>
-                                                        <p className="text-blue-600 font-bold">{payload[0].value}% Achieved</p>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        }}
-                                    />
-                                    <ReferenceLine y={50} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'KPI Threshold', fill: '#ef4444', fontSize: 11, position: 'insideTopRight' }} />
-                                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={80}>
-                                        {graphData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.value >= 50 ? '#3b82f6' : '#94a3b8'} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Table Section */}
             {activePlos.length > 0 && (

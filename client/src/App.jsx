@@ -14,6 +14,7 @@ import { Loader } from '@/components/ui/loader';
 
 // Admin Pages
 import Programs from '@/pages/admin/Programs';
+import PLOs from '@/pages/admin/PLOs';
 import Courses from '@/pages/admin/Courses';
 import Classes from '@/pages/admin/Classes';
 import Assignments from '@/pages/admin/Assignments';
@@ -29,7 +30,7 @@ import {
   PLOMapping, Students,
   AwardList, GPAManager, PLOReport,
   ConsolidatedReport, CourseBreadth, GPAAttainmentGraph,
-  CLOAttainment, CLOAttainmentGraph, MyCourses, CLOManager, OBEMarks, AssessmentManager, Gradebook, Gamification, Feedback
+  CLOAttainment, CLOAttainmentGraph, PLOAttainment, PLOAttainmentGraph, MyCourses, CLOManager, OBEMarks, AssessmentManager, Gradebook, Gamification, Feedback
 } from './pages/teacher/TeacherPages';
 import TeacherRootLayout from '@/pages/teacher/TeacherRootLayout';
 import TeacherCourseLayout from '@/pages/teacher/TeacherCourseLayout';
@@ -103,11 +104,12 @@ function App() {
           {/* Admin Portal - Independent Layout */}
           <Route path="/admin" element={
             <ProtectedRoute>
-              <AdminRootLayout />
+              {role === 'admin' ? <AdminRootLayout /> : <Navigate to="/dashboard" />}
             </ProtectedRoute>
           }>
             <Route index element={<Navigate to="programs" replace />} />
             <Route path="programs" element={<Programs />} />
+            <Route path="plos" element={<PLOs />} />
             <Route path="courses" element={<Courses />} />
             <Route path="classes" element={<Classes />} />
             <Route path="assignments" element={<Assignments />} />
@@ -139,6 +141,10 @@ function App() {
               <Route path="clos" element={<CLOManager />} />
               <Route path="clos/attainment" element={<CLOAttainment />} />
               <Route path="clos/attainment-graph" element={<CLOAttainmentGraph />} />
+
+              {/* PLO Module */}
+              <Route path="plos/attainment" element={<PLOAttainment />} />
+              <Route path="plos/attainment-graph" element={<PLOAttainmentGraph />} />
 
               {/* Report Features */}
               <Route path="reports/plo" element={<PLOReport />} />

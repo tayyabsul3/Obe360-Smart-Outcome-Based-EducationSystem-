@@ -68,10 +68,10 @@ export default function GPAManager() {
     const courseTotalMarks = creditHours === 4 ? 80 : creditHours === 3 ? 60 : 40;
 
     const categoryConfig = {
-        ASSIGNMENT: { label: 'Assignments', totalWeight: 10, keywords: ['assignment'] },
-        QUIZ: { label: 'Quizzes', totalWeight: 10, keywords: ['quiz'] },
-        MID: { label: 'Mid Term', totalWeight: 30, keywords: ['mid'] },
-        FINAL: { label: 'Final Exam', totalWeight: 50, keywords: ['final'] }
+        ASSIGNMENT: { label: 'Assignments', totalWeight: courseTotalMarks * 0.1, keywords: ['assignment'] },
+        QUIZ: { label: 'Quizzes', totalWeight: courseTotalMarks * 0.1, keywords: ['quiz'] },
+        MID: { label: 'Mid Term', totalWeight: courseTotalMarks * 0.3, keywords: ['mid'] },
+        FINAL: { label: 'Final Exam', totalWeight: courseTotalMarks * 0.5, keywords: ['final'] }
     };
 
     const getCategory = (type) => {
@@ -144,10 +144,13 @@ export default function GPAManager() {
             };
         });
 
-        const { grade, gpa } = getGradeAndGPA(totalWeightedPercentage);
+        const totalScaled = totalWeightedPercentage;
+        const totalPercentage = (totalScaled / courseTotalMarks) * 100;
+        const { grade, gpa } = getGradeAndGPA(totalPercentage);
 
         return {
-            totalPercentage: totalWeightedPercentage.toFixed(1),
+            totalPercentage: totalPercentage.toFixed(1),
+            totalScaled: totalScaled.toFixed(1),
             grade,
             gpa: gpa.toFixed(2),
             categoryDetails
@@ -338,9 +341,9 @@ export default function GPAManager() {
                                         </th>
                                     ))
                                 ))}
-                                <th className="p-2 border-r border-slate-200 text-center">%age</th>
+                                <th className="p-2 border-r border-slate-200 text-center">Marks</th>
                                 <th className="p-2 border-r border-slate-200 text-center">Grade</th>
-                                <th className="p-2 text-center">Score/GPA</th>
+                                <th className="p-2 text-center">GPA</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -358,7 +361,7 @@ export default function GPAManager() {
                                                 </td>
                                             ))
                                         ))}
-                                        <td className="p-2 border-r border-slate-200 text-center font-black text-slate-900 text-[11px]">{stats.totalPercentage}</td>
+                                        <td className="p-2 border-r border-slate-200 text-center font-black text-slate-900 text-[11px]">{stats.totalScaled}</td>
                                         <td className="p-2 border-r border-slate-200 text-center font-black text-slate-900 text-[11px]">{stats.grade}</td>
                                         <td className="p-2 text-center font-black text-slate-900 text-[11px]">{stats.gpa}</td>
                                     </tr>

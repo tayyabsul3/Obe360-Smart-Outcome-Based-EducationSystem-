@@ -14,6 +14,8 @@ import PLOReport from './PLOReport';
 import ConsolidatedReport from './ConsolidatedReport';
 import CourseBreadth from './CourseBreadth';
 import GPAAttainmentGraph from './GPAAttainmentGraph';
+import PLOAttainment from './PLOAttainment';
+import PLOAttainmentGraph from './PLOAttainmentGraph';
 
 
 // Placeholders for future modules
@@ -41,5 +43,7 @@ export {
     Feedback,
 
     CLOAttainment,
-    CLOAttainmentGraph
+    CLOAttainmentGraph,
+    PLOAttainment,
+    PLOAttainmentGraph
 };
