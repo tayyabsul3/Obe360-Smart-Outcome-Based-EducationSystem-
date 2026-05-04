@@ -3,12 +3,27 @@ require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
+  port: parseInt(process.env.SMTP_PORT || '587'),
   secure: process.env.SMTP_SECURE === 'true', // true for 465, false for 587
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false // Helps with some cloud hosting certificate issues
+  }
+});
+
+// Verify connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('\n!!!!!!!!!! SMTP CONNECTION FAILED !!!!!!!!!!');
+    console.error('Check your SMTP_USER and SMTP_PASS (App Password)');
+    console.error('Error Details:', error.message);
+    console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
+  } else {
+    console.log('--- SMTP Server is ready to take our messages ---');
+  }
 });
 
 const sendInvitationEmail = async (email, password, fullName) => {
@@ -71,7 +86,11 @@ const send2FAEmail = async (email, otpCode, fullName) => {
     const info = await transporter.sendMail(mailOptions);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('2FA Email Error:', error);
+    console.error('\n========== 2FA SMTP ERROR ==========');
+    console.error('To:', email);
+    console.error('Error Message:', error.message);
+    console.error('Full Error Object:', JSON.stringify(error, null, 2));
+    console.error('====================================\n');
     return { success: false, error: error.message };
   }
 };
