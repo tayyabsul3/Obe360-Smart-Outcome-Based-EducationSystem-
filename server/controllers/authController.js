@@ -115,6 +115,7 @@ const login = async (req, res) => {
       .eq('id', data.user.id)
       .single();
 
+    /* 
     // Generate 6-digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = Date.now() + 10 * 60000; // 10 minutes
@@ -139,6 +140,17 @@ const login = async (req, res) => {
       message: "Verification code has been sent to your email.",
       requires2FA: true,
       email: email
+    });
+    */
+
+    // TEMPORARY: Return session data directly while email issues are being resolved
+    res.json({
+        message: "Login successful!",
+        user: data.user,
+        session: data.session,
+        role: profile?.role || 'teacher',
+        isFirstLogin: profile?.is_first_login,
+        requires2FA: false
     });
   } catch (err) {
     console.error('Login Error:', err);
