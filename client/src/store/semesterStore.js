@@ -44,9 +44,11 @@ const useSemesterStore = create(
                         const data = await res.json();
                         set({ semesters: data });
 
-                        // Seed working semester if missing
+                        // Seed or Validate working semester
                         const currentState = get();
-                        if (!currentState.workingSemesterId && data.length > 0) {
+                        const exists = data.find(s => s.id === currentState.workingSemesterId);
+                        
+                        if (!exists && data.length > 0) {
                             const active = data.find(s => s.is_active) || data[0];
                             set({ workingSemesterId: active.id });
                         }

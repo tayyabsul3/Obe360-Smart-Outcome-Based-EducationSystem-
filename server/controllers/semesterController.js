@@ -35,29 +35,29 @@ const createSemester = async (req, res) => {
 const setActiveSemester = async (req, res) => {
     const { id } = req.params;
     try {
-        // Deactivate all
-        await supabaseAdmin
-            .from('semesters')
-            .update({ is_active: false })
-            .neq('id', 'placeholder_to_update_all'); // Small hack: neq 'null' or just passing a widespread truthy condition since Supabase needs a filter for bulk update if RLS is on, but service_role can bypass. Let's use `neq('id', 0)`.
-
+        // 1. Deactivate any currently active semesters
         const { error: deactivateError } = await supabaseAdmin
             .from('semesters')
             .update({ is_active: false })
-            .neq('id', id);
+            .eq('is_active', true);
 
         if (deactivateError) throw deactivateError;
 
-        // Activate the target
+        // 2. Activate the target semester
         const { data, error } = await supabaseAdmin
             .from('semesters')
             .update({ is_active: true })
             .eq('id', id)
-            .select()
-            .single();
+            .select();
 
         if (error) throw error;
-        res.json(data);
+        
+        // Return the first (and only) updated row, or 404 if not found
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: "Semester not found" });
+        }
+        
+        res.json(data[0]);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }

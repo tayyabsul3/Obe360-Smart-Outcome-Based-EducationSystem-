@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, CheckCircle2, Clock, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import useSemesterStore from '@/store/semesterStore';
 
 export default function Settings() {
     const [semesters, setSemesters] = useState([]);
@@ -15,6 +16,7 @@ export default function Settings() {
     const [newSemesterName, setNewSemesterName] = useState('');
     const [creating, setCreating] = useState(false);
     const [activatingId, setActivatingId] = useState(null);
+    const globalFetchSemesters = useSemesterStore(state => state.fetchSemesters);
 
     useEffect(() => {
         fetchSemesters();
@@ -52,6 +54,7 @@ export default function Settings() {
                 toast.success("Semester Created");
                 setNewSemesterName('');
                 fetchSemesters();
+                globalFetchSemesters(); // Refresh global store too
             } else {
                 toast.error("Failed to create semester");
             }
@@ -72,7 +75,8 @@ export default function Settings() {
 
             if (res.ok) {
                 toast.success("Active Session Updated");
-                fetchSemesters();
+                await fetchSemesters();
+                await globalFetchSemesters(); // Update global store context
             } else {
                 toast.error("Failed to activate session");
             }
