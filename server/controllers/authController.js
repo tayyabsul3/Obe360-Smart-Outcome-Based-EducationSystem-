@@ -41,22 +41,15 @@ const inviteTeacher = async (req, res) => {
 
     const user = data.user;
 
-    // 4. Send Email with Credentials
-    const emailResult = await sendInvitationEmail(email, password, fullName);
+    // 4. Send Email with Credentials (Non-blocking)
+    sendInvitationEmail(email, password, fullName).catch(err => {
+      console.error('Failed to send background invitation email:', err);
+    });
 
-    if (!emailResult.success) {
-      console.error('Failed to send invitation email:', emailResult.error);
-      // User is created but email failed. 
-      // We might want to return a warning or specific status.
-      return res.status(200).json({
-        message: "User created, but failed to send email. Please inform the user manually.",
-        user: user,
-        credentials: { email, password }, // RETURN CREDENTIALS TO ADMIN IN RESPONSE just in case
-        emailError: emailResult.error
-      });
-    }
-
-    res.json({ message: "Invitation sent successfully!", user: user });
+    res.json({ 
+      message: "Invitation process initiated. User created and email is being sent.", 
+      user: user 
+    });
 
   } catch (err) {
     console.error('\n========== GENERAL SERVER ERROR (INVITE) ==========');
@@ -137,10 +130,13 @@ const login = async (req, res) => {
         }
     });
 
-    await send2FAEmail(email, otpCode, data.user?.user_metadata?.full_name);
+    // Send 2FA Code (Non-blocking background process)
+    send2FAEmail(email, otpCode, data.user?.user_metadata?.full_name).catch(err => {
+      console.error('Background 2FA Email Error:', err);
+    });
 
     res.json({
-      message: "2FA Code sent to your email",
+      message: "Verification code has been sent to your email.",
       requires2FA: true,
       email: email
     });
