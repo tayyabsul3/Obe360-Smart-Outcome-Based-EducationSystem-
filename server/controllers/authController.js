@@ -39,10 +39,17 @@ const inviteTeacher = async (req, res) => {
 
     const user = data.user;
 
-    // 4. Send Email with Credentials (Non-blocking)
-    sendInvitationEmail(email, password, fullName).catch(err => {
-      console.error('Failed to send background invitation email:', err);
-    });
+    // 4. Send Email with Credentials
+    try {
+        await sendInvitationEmail(email, password, fullName);
+    } catch (err) {
+        console.error('Invitation Email Failure:', err);
+        return res.json({ 
+            message: "User created, but invitation email failed to send. Please check SMTP settings.", 
+            user: user,
+            emailError: err.message
+        });
+    }
 
     res.json({ 
       message: "Invitation process initiated. User created and email is being sent.", 
@@ -137,10 +144,15 @@ const login = async (req, res) => {
         throw new Error("Security initialization failed. Please try again.");
     }
 
-    // Send 2FA Code (Non-blocking background process)
-    send2FAEmail(email, otpCode, profile?.full_name || data.user?.user_metadata?.full_name).catch(err => {
-      console.error('Background 2FA Email Error:', err);
-    });
+    // Send 2FA Code (Wait for delivery or fail early)
+    try {
+        await send2FAEmail(email, otpCode, profile?.full_name || data.user?.user_metadata?.full_name);
+    } catch (err) {
+        console.error('2FA Email Send Failure:', err);
+        // We still proceed if the OTP is stored, but log the error
+        // Actually, it's better to fail the login so the user knows they won't get the email
+        return res.status(500).json({ error: "Failed to send verification email. Please check your SMTP settings." });
+    }
 
     res.json({
       message: "Verification code has been sent to your email.",

@@ -1,130 +1,114 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { User } from 'lucide-react';
+import { motion } from 'motion/react';
+import { User, Code, Briefcase, Rocket } from 'lucide-react';
+import BorderGlow from './BorderGlow';
 
 const teamMembers = [
     {
-        name: "Fahad",
+        name: "Fahad Ali Babar",
         role: "Project Manager",
-        bio: "Driving project delivery and team synchronization with 2 years of proven industry experience orchestrating successful software lifecycles.",
-        // Generic male avatar
-        image: "https://avatar.iran.liara.run/public/boy?username=Fahad",
-        color: "from-blue-500 to-indigo-600"
+        icon: <Briefcase size={32} />,
+        bio: "Driving project delivery and team synchronization with proven expertise in orchestrating successful software lifecycles.",
+        color: "from-blue-500 to-indigo-600",
+        glow: "210 100 60"
     },
     {
-        name: "Asim",
+        name: "Muhammad Asim",
         role: "Frontend Developer",
-        bio: "Specializing in crafting premium, performant user interfaces with solid React development experience focused on pixel-perfect execution.",
-        image: "https://avatar.iran.liara.run/public/boy?username=Asim",
-        color: "from-indigo-500 to-sky-500"
+        icon: <Code size={32} />,
+        bio: "Specializing in crafting premium, performant user interfaces with solid React development focused on pixel-perfect execution.",
+        color: "from-indigo-500 to-sky-500",
+        glow: "260 100 70"
     },
     {
-        name: "Tayyab",
+        name: "Muhammad Tayyab",
         role: "Product Developer",
-        bio: "Architecting scalable data systems and core platform infrastructure with 2 years of deep product development experience.",
-        image: "https://avatar.iran.liara.run/public/boy?username=Tayyab",
-        color: "from-sky-500 to-blue-500"
+        icon: <Rocket size={32} />,
+        bio: "Architecting scalable data systems and core platform infrastructure with deep full-stack development experience.",
+        color: "from-sky-500 to-blue-500",
+        glow: "190 100 60"
     }
 ];
 
 export default function TeamSection() {
-    const [activeIndex, setActiveIndex] = useState(0);
-    const containerRef = useRef(null);
-    const textRefs = useRef([]);
-
-    useEffect(() => {
-        const observerOptions = {
-            root: null,
-            rootMargin: '-40% 0px -40% 0px',
-            threshold: 0
-        };
-
-        const observerCallback = (entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const idx = Number(entry.target.getAttribute('data-index'));
-                    setActiveIndex(idx);
-                }
-            });
-        };
-
-        const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-        textRefs.current.forEach(ref => {
-            if (ref) observer.observe(ref);
-        });
-
-        return () => observer.disconnect();
-    }, []);
-
     return (
-        <section id="team" className="bg-[#020617] text-white relative">
-            {/* Top fading border */}
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+        <section id="team" className="py-24 bg-[#020617] text-white relative overflow-hidden">
+            {/* Animated Background Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.05)_0%,_transparent_70%)]"></div>
+            </div>
 
-            <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
-                <div className="flex flex-col md:flex-row relative">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div className="text-center mb-16">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6 }}
+                    >
+                        <h2 className="text-sm font-bold text-blue-500 uppercase tracking-[0.2em] mb-3">Our Visionaries</h2>
+                        <h3 className="text-4xl md:text-6xl font-black tracking-tight mb-4 text-white">
+                            The Team Behind <span className="text-blue-500">OBE 360</span>
+                        </h3>
+                        <p className="text-slate-400 text-lg max-w-2xl mx-auto font-medium">
+                            A group of dedicated engineers committed to revolutionizing the educational landscape through smart technology.
+                        </p>
+                    </motion.div>
+                </div>
 
-                    {/* LEFT SIDE: Sticky Image Showcase (App-style display) */}
-                    <div className="w-full md:w-1/2 md:sticky md:top-0 h-[40vh] md:h-screen flex items-center justify-center pt-24 md:pt-0 overflow-hidden relative z-10">
-                        {/* Abstract Glow Behind Image */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className={`w-[80%] aspect-square rounded-full blur-[100px] opacity-30 bg-gradient-to-br ${teamMembers[activeIndex].color} transition-all duration-1000`}></div>
-                        </div>
-
-                        <div className="relative w-full max-w-[400px] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-slate-900 group">
-                            <AnimatePresence mode="popLayout" initial={false}>
-                                <motion.img
-                                    key={activeIndex}
-                                    src={teamMembers[activeIndex].image}
-                                    alt={teamMembers[activeIndex].name}
-                                    initial={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
-                                    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                                    exit={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
-                                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                                    className="absolute inset-0 w-full h-full object-cover origin-center"
-                                />
-                            </AnimatePresence>
-
-                            {/* Inner Glass border effect overlay */}
-                            <div className="absolute inset-0 border-[0.5px] border-white/20 rounded-[2rem] pointer-events-none"></div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60"></div>
-                        </div>
-                    </div>
-
-                    {/* RIGHT SIDE: Scrolling Text Content */}
-                    <div className="w-full md:w-1/2 relative z-20 pb-24 md:pb-0">
-                        {teamMembers.map((member, idx) => (
-                            <div
-                                key={idx}
-                                ref={el => textRefs.current[idx] = el}
-                                data-index={idx}
-                                className="min-h-[60vh] md:min-h-screen flex flex-col justify-center py-20 pr-4 pl-4 md:pl-16 lg:pl-24"
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {teamMembers.map((member, idx) => (
+                        <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, amount: 0.2 }}
+                            transition={{ duration: 0.8, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                            className="group"
+                        >
+                            <BorderGlow 
+                                className="h-full rounded-[2.5rem]" 
+                                glowColor={member.glow}
+                                glowIntensity={1.2}
+                                animated={true}
+                                borderRadius={40}
                             >
-                                <motion.div
-                                    initial={{ opacity: 0, x: 50 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    viewport={{ margin: "-20% 0px -20% 0px" }}
-                                    transition={{ duration: 0.6, ease: "easeOut" }}
-                                    className={`transition-opacity duration-500 ${activeIndex === idx ? 'opacity-100' : 'opacity-30'}`}
-                                >
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-semibold mb-6">
-                                        <User size={14} /> Team Structure
+                                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/5 p-8 rounded-[2.5rem] h-full flex flex-col items-center text-center transition-all duration-500 group-hover:-translate-y-2 group-hover:bg-slate-900/80">
+                                    <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${member.color} flex items-center justify-center mb-8 shadow-2xl shadow-blue-500/20 transform transition-transform duration-500 group-hover:rotate-[10deg] group-hover:scale-110`}>
+                                        <div className="text-white">
+                                            {member.icon}
+                                        </div>
                                     </div>
-                                    <h3 className="text-5xl md:text-6xl font-black text-white tracking-tight mb-2">
+                                    
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-400 text-xs font-bold mb-4 uppercase tracking-widest">
+                                        <User size={12} /> Team Member
+                                    </div>
+                                    
+                                    <h4 className="text-3xl font-black text-white mb-2 tracking-tight">
                                         {member.name}
-                                    </h3>
-                                    <h4 className={`text-xl md:text-2xl font-bold bg-gradient-to-r ${member.color} bg-clip-text text-transparent mb-6`}>
-                                        {member.role}
                                     </h4>
-                                    <p className="text-lg text-slate-400 leading-relaxed font-medium max-w-lg">
+                                    
+                                    <h5 className={`text-lg font-bold bg-gradient-to-r ${member.color} bg-clip-text text-transparent mb-6`}>
+                                        {member.role}
+                                    </h5>
+                                    
+                                    <p className="text-slate-400 leading-relaxed font-medium mt-auto">
                                         {member.bio}
                                     </p>
-                                </motion.div>
-                            </div>
-                        ))}
-                    </div>
 
+                                    <div className="mt-8 pt-6 border-t border-white/5 w-full flex justify-center gap-4">
+                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-blue-600 transition-colors cursor-pointer">
+                                            <div className="w-3 h-3 bg-white/40 rounded-full"></div>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-blue-600 transition-colors cursor-pointer">
+                                            <div className="w-3 h-3 bg-white/40 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </BorderGlow>
+                        </motion.div>
+                    ))}
                 </div>
             </div>
         </section>

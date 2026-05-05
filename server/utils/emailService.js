@@ -57,10 +57,7 @@ const sendInvitationEmail = async (email, password, fullName) => {
   } catch (error) {
     console.error('\n========== NODEMAILER / SMTP ERROR ==========');
     console.error('Error Message:', error.message);
-    console.error('Stack Trace:', error.stack);
-    console.error('Full Error Object:', JSON.stringify(error, null, 2));
-    console.error('=============================================\n');
-    return { success: false, error: error.message, fullError: error };
+    throw error;
   }
 };
 
@@ -89,9 +86,7 @@ const send2FAEmail = async (email, otpCode, fullName) => {
     console.error('\n========== 2FA SMTP ERROR ==========');
     console.error('To:', email);
     console.error('Error Message:', error.message);
-    console.error('Full Error Object:', JSON.stringify(error, null, 2));
-    console.error('====================================\n');
-    return { success: false, error: error.message };
+    throw error; // Throw so the controller can catch it
   }
 };
 

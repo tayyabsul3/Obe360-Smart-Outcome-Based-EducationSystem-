@@ -132,26 +132,10 @@ export default function Landing() {
             });
         }, howRef);
 
-        // Modules Section
-        const modulesCtx = gsap.context(() => {
-            gsap.from(".module-card", {
-                scrollTrigger: {
-                    trigger: modulesRef.current,
-                    start: "top 80%",
-                },
-                scale: 0.9,
-                opacity: 0,
-                duration: 0.6,
-                stagger: 0.1,
-                ease: "power2.out"
-            });
-        }, modulesRef);
-
         return () => {
             heroCtx.revert();
             whyCtx.revert();
             howCtx.revert();
-            modulesCtx.revert();
         };
     }, []);
 
@@ -420,10 +404,10 @@ export default function Landing() {
                             </div>
 
                             <motion.div
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6 }}
+                                viewport={{ once: true, amount: 0.2 }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
                                 className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
                             >
                                 {[
@@ -450,7 +434,7 @@ export default function Landing() {
                                 ].map((module, i) => (
                                     <motion.div
                                         key={i}
-                                        initial={{ opacity: 0, y: 30 }}
+                                        initial={{ opacity: 0, y: 20 }}
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
                                         transition={{ duration: 0.5, delay: i * 0.1 }}
