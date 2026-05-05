@@ -1,4 +1,4 @@
-import { Bell, User, LogOut, ChevronDown, ChevronRight, Menu, Home, Book, Calculator, GraduationCap, Settings, Mail } from 'lucide-react';
+import { User, LogOut, ChevronDown, ChevronRight, Menu, Home, Book, Calculator, GraduationCap } from 'lucide-react';
 import useAuthStore from '@/store/authStore';
 import useSemesterStore from '@/store/semesterStore';
 import { Button } from '@/components/ui/button';
@@ -117,18 +117,7 @@ export default function Header() {
 
             {/* Right: User Menu */}
             <div className="flex items-center gap-6">
-                <div className="flex items-center gap-4 border-r border-slate-700 pr-6 mr-6">
-                    <button className="p-2 hover:bg-white/10 rounded-xl transition-all relative group">
-                        <Bell size={20} className="text-slate-400 group-hover:text-white" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#2C3E50]"></span>
-                    </button>
-                    <button className="p-2 hover:bg-white/10 rounded-xl transition-all group">
-                        <Mail size={20} className="text-slate-400 group-hover:text-white" />
-                    </button>
-                    <button className="p-2 hover:bg-white/10 rounded-xl transition-all group" onClick={() => navigate('/profile')}>
-                        <Settings size={20} className="text-slate-400 group-hover:text-white" />
-                    </button>
-                </div>
+                {/* Icons removed per user request */}
 
                 <div className="flex items-center gap-3">
                     <div className="flex flex-col text-right">
