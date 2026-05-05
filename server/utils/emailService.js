@@ -11,7 +11,11 @@ const transporter = nodemailer.createTransport({
   },
   tls: {
     rejectUnauthorized: false // Helps with some cloud hosting certificate issues
-  }
+  },
+  // Add timeouts to prevent hanging
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 // Verify connection on startup
@@ -27,6 +31,10 @@ transporter.verify((error, success) => {
 });
 
 const sendInvitationEmail = async (email, password, fullName) => {
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Email sending timed out after 10 seconds')), 10000)
+  );
+
   try {
     const mailOptions = {
       from: process.env.SMTP_FROM_EMAIL || '"OBE360 Admin" <noreply@obe360.com>',
@@ -51,7 +59,7 @@ const sendInvitationEmail = async (email, password, fullName) => {
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await Promise.race([transporter.sendMail(mailOptions), timeoutPromise]);
     console.log('Email sent: %s', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
@@ -62,6 +70,10 @@ const sendInvitationEmail = async (email, password, fullName) => {
 };
 
 const send2FAEmail = async (email, otpCode, fullName) => {
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Email sending timed out after 10 seconds')), 10000)
+  );
+
   try {
     const mailOptions = {
       from: process.env.SMTP_FROM_EMAIL || '"OBE360 Security" <noreply@obe360.com>',
@@ -80,7 +92,7 @@ const send2FAEmail = async (email, otpCode, fullName) => {
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await Promise.race([transporter.sendMail(mailOptions), timeoutPromise]);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('\n========== 2FA SMTP ERROR ==========');
