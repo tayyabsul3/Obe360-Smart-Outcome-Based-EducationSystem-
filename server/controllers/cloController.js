@@ -97,21 +97,26 @@ const updateCLO = async (req, res) => {
     const { id } = req.params;
     const { code, description, title, type, level, plo_id, is_active } = req.body;
     try {
-        const { data, error } = await supabaseAdmin
+        const { data: updatedData, error } = await supabaseAdmin
             .from('course_learning_outcomes')
             .update({
                 code,
                 description,
-                title: title || description.substring(0, 50),
+                title: title || (description ? description.substring(0, 50) : 'Untitled CLO'),
                 type,
-                level: req.body.level || 'C1',
+                level: level || 'C1',
                 is_active: is_active ?? true
             })
             .eq('id', id)
-            .select()
-            .single();
+            .select();
 
         if (error) throw error;
+
+        if (!updatedData || updatedData.length === 0) {
+            return res.status(404).json({ error: "CLO not found" });
+        }
+
+        const data = updatedData[0];
 
         // Update mapping if plo_id is present in the request payload (including null or 'none')
         if (plo_id !== undefined) {

@@ -2,8 +2,6 @@ const supabaseAdmin = require('../config/supabase');
 const { sendInvitationEmail, send2FAEmail } = require('../utils/emailService');
 const crypto = require('crypto');
 
-const otpCache = new Map();
-
 // Generate a random password
 const generatePassword = (length = 12) => {
   return crypto.randomBytes(length).toString('hex').slice(0, length);
@@ -111,28 +109,36 @@ const login = async (req, res) => {
     // Fetch user profile to get role and is_first_login
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('role, is_first_login')
+      .select('role, is_first_login, full_name')
       .eq('id', data.user.id)
       .single();
 
-    /* 
     // Generate 6-digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 10 * 60000; // 10 minutes
+    const expires = new Date(Date.now() + 10 * 60000).toISOString(); // 10 minutes
 
-    otpCache.set(email, {
-        code: otpCode,
-        expires,
-        sessionData: {
-            user: data.user,
-            session: data.session,
-            role: profile?.role || 'teacher',
-            isFirstLogin: profile?.is_first_login
-        }
-    });
+    // Store OTP and Session Data in the database for persistence
+    const { error: otpError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+            otp_code: otpCode,
+            otp_expires_at: expires,
+            temp_session_data: {
+                user: data.user,
+                session: data.session,
+                role: profile?.role || 'teacher',
+                isFirstLogin: profile?.is_first_login
+            }
+        })
+        .eq('id', data.user.id);
+
+    if (otpError) {
+        console.error("Failed to store OTP:", otpError);
+        throw new Error("Security initialization failed. Please try again.");
+    }
 
     // Send 2FA Code (Non-blocking background process)
-    send2FAEmail(email, otpCode, data.user?.user_metadata?.full_name).catch(err => {
+    send2FAEmail(email, otpCode, profile?.full_name || data.user?.user_metadata?.full_name).catch(err => {
       console.error('Background 2FA Email Error:', err);
     });
 
@@ -141,20 +147,9 @@ const login = async (req, res) => {
       requires2FA: true,
       email: email
     });
-    */
-
-    // TEMPORARY: Return session data directly while email issues are being resolved
-    res.json({
-        message: "Login successful!",
-        user: data.user,
-        session: data.session,
-        role: profile?.role || 'teacher',
-        isFirstLogin: profile?.is_first_login,
-        requires2FA: false
-    });
   } catch (err) {
     console.error('Login Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 }
 
@@ -162,23 +157,58 @@ const verify2FA = async (req, res) => {
     const { email, code } = req.body;
     if (!email || !code) return res.status(400).json({ error: "Email and code required" });
 
-    const cached = otpCache.get(email);
-    if (!cached) return res.status(400).json({ error: "Session expired or invalid" });
+    try {
+        // 1. Find user by email
+        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+        
+        if (userError || !userData?.user) {
+            return res.status(400).json({ error: "User not found" });
+        }
 
-    if (Date.now() > cached.expires) {
-        otpCache.delete(email);
-        return res.status(400).json({ error: "OTP expired" });
+        const user = userData.user;
+
+        // 2. Fetch OTP from profile
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError || !profile) {
+            return res.status(400).json({ error: "Security profile not found" });
+        }
+
+        if (!profile.otp_code || !profile.otp_expires_at) {
+            return res.status(400).json({ error: "No active verification session" });
+        }
+
+        // 3. Validate
+        if (new Date() > new Date(profile.otp_expires_at)) {
+            return res.status(400).json({ error: "OTP expired" });
+        }
+
+        if (profile.otp_code !== code) {
+            return res.status(400).json({ error: "Invalid code" });
+        }
+
+        // 4. Clear OTP and return session data
+        await supabaseAdmin
+            .from('profiles')
+            .update({
+                otp_code: null,
+                otp_expires_at: null,
+                temp_session_data: null
+            })
+            .eq('id', user.id);
+
+        res.json({
+            message: "Login successful!",
+            ...profile.temp_session_data
+        });
+    } catch (err) {
+        console.error('Verify 2FA Error:', err);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-
-    if (cached.code !== code) {
-        return res.status(400).json({ error: "Invalid code" });
-    }
-
-    otpCache.delete(email);
-    res.json({
-        message: "Login successful!",
-        ...cached.sessionData
-    });
 };
 
 const updateProfile = async (req, res) => {
