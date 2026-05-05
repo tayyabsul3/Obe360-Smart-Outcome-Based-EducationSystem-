@@ -120,46 +120,14 @@ const login = async (req, res) => {
       .eq('id', data.user.id)
       .single();
 
-    // Generate 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = new Date(Date.now() + 10 * 60000).toISOString(); // 10 minutes
-
-    // Store OTP and Session Data in the database for persistence
-    const { error: otpError } = await supabaseAdmin
-        .from('profiles')
-        .update({
-            otp_code: otpCode,
-            otp_expires_at: expires,
-            temp_session_data: {
-                user: data.user,
-                session: data.session,
-                role: profile?.role || 'teacher',
-                isFirstLogin: profile?.is_first_login
-            }
-        })
-        .eq('id', data.user.id);
-
-    if (otpError) {
-        console.error("Failed to store OTP:", otpError);
-        throw new Error("Security initialization failed. Please try again.");
-    }
-
-    // Send 2FA Code (Wait for delivery or fail early)
-    try {
-        await send2FAEmail(email, otpCode, profile?.full_name || data.user?.user_metadata?.full_name);
-    } catch (err) {
-        console.error('2FA Email Send Failure:', err);
-        // Fallback hint for presentation/emergency use
-        return res.status(500).json({ 
-          error: "Failed to send verification email. (Hint: If this is a presentation, check the 'profiles' table in your DB for the code.)",
-          details: err.message 
-        });
-    }
-
+    // Standard Login: Return session directly
     res.json({
-      message: "Verification code has been sent to your email.",
-      requires2FA: true,
-      email: email
+      message: "Login successful!",
+      user: data.user,
+      session: data.session,
+      role: profile?.role || 'teacher',
+      isFirstLogin: profile?.is_first_login,
+      requires2FA: false // Set to false to bypass frontend 2FA UI
     });
   } catch (err) {
     console.error('Login Error:', err);
