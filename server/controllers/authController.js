@@ -149,9 +149,11 @@ const login = async (req, res) => {
         await send2FAEmail(email, otpCode, profile?.full_name || data.user?.user_metadata?.full_name);
     } catch (err) {
         console.error('2FA Email Send Failure:', err);
-        // We still proceed if the OTP is stored, but log the error
-        // Actually, it's better to fail the login so the user knows they won't get the email
-        return res.status(500).json({ error: "Failed to send verification email. Please check your SMTP settings." });
+        // Fallback hint for presentation/emergency use
+        return res.status(500).json({ 
+          error: "Failed to send verification email. (Hint: If this is a presentation, check the 'profiles' table in your DB for the code.)",
+          details: err.message 
+        });
     }
 
     res.json({

@@ -12,23 +12,13 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false // Helps with some cloud hosting certificate issues
   },
-  // Add timeouts to prevent hanging
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
+  // Reduced timeouts for serverless environments
+  connectionTimeout: 8000, 
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
 });
 
-// Verify connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('\n!!!!!!!!!! SMTP CONNECTION FAILED !!!!!!!!!!');
-    console.error('Check your SMTP_USER and SMTP_PASS (App Password)');
-    console.error('Error Details:', error.message);
-    console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
-  } else {
-    console.log('--- SMTP Server is ready to take our messages ---');
-  }
-});
+// Removed transporter.verify() for production to avoid blocking serverless startup
 
 const sendInvitationEmail = async (email, password, fullName) => {
   const timeoutPromise = new Promise((_, reject) =>
@@ -71,7 +61,7 @@ const sendInvitationEmail = async (email, password, fullName) => {
 
 const send2FAEmail = async (email, otpCode, fullName) => {
   const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Email sending timed out after 10 seconds')), 10000)
+    setTimeout(() => reject(new Error('Email sending timed out after 8 seconds')), 8000)
   );
 
   try {
