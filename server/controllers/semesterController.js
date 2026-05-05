@@ -33,7 +33,8 @@ const createSemester = async (req, res) => {
 };
 
 const setActiveSemester = async (req, res) => {
-    const { id } = req.params;
+    const id = req.params.id.trim();
+    console.log('Activating semester ID:', id);
     try {
         // 1. Deactivate any currently active semesters
         const { error: deactivateError } = await supabaseAdmin
@@ -41,7 +42,10 @@ const setActiveSemester = async (req, res) => {
             .update({ is_active: false })
             .eq('is_active', true);
 
-        if (deactivateError) throw deactivateError;
+        if (deactivateError) {
+            console.error('Deactivation error:', deactivateError);
+            throw deactivateError;
+        }
 
         // 2. Activate the target semester
         const { data, error } = await supabaseAdmin
@@ -50,15 +54,25 @@ const setActiveSemester = async (req, res) => {
             .eq('id', id)
             .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Activation error:', error);
+            throw error;
+        }
+        
+        console.log('Update result data:', data);
         
         // Return the first (and only) updated row, or 404 if not found
         if (!data || data.length === 0) {
-            return res.status(404).json({ error: "Semester not found" });
+            console.warn('No semester found with ID:', id);
+            return res.status(404).json({ 
+                error: "Semester not found",
+                message: `No semester matches the provided ID: ${id}`
+            });
         }
         
         res.json(data[0]);
     } catch (error) {
+        console.error('Catch block error:', error);
         res.status(400).json({ error: error.message });
     }
 };
