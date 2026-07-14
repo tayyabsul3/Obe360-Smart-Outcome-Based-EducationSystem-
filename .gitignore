@@ -40,3 +40,8 @@ obj/
 # migrations/
 # *.csv
 # *.sql
+
+# Local Scratch / Test Scripts
+server/check_profiles_schema.js
+server/check_semesters.js
+scratch/

@@ -37,15 +37,20 @@ const getStudents = async (req, res) => {
     try {
         let query = supabaseAdmin
             .from('students')
-            .select('*')
-            .order('batch', { ascending: false })
-            .order('section', { ascending: true })
-            .order('reg_no', { ascending: true });
+            .select('*');
+
+        if (req.adminId) {
+            query = query.eq('admin_id', req.adminId);
+        }
 
         if (batch) query = query.eq('batch', batch);
         if (section) query = query.eq('section', section);
 
-        const { data, error } = await query;
+        const { data, error } = await query
+            .order('batch', { ascending: false })
+            .order('section', { ascending: true })
+            .order('reg_no', { ascending: true });
+
         if (error) throw error;
         res.json(data);
     } catch (error) {
@@ -58,7 +63,7 @@ const createStudent = async (req, res) => {
     try {
         const { data, error } = await supabaseAdmin
             .from('students')
-            .insert([{ name, reg_no, email, batch, section, father_name, current_city }])
+            .insert([{ name, reg_no, email, batch, section, father_name, current_city, admin_id: req.adminId }])
             .select()
             .single();
 
@@ -100,9 +105,10 @@ const deleteStudent = async (req, res) => {
 
 const getBatches = async (req, res) => {
     try {
-        // Distinct batches (Using a workaround as supabase-js distinct is tricky, usually .rpc or just raw sql is better, but let's try .select)
-        // Or just fetch all and unique them in JS (not scalable but ok for now)
-        const { data, error } = await supabaseAdmin.from('students').select('batch');
+        let query = supabaseAdmin.from('students').select('batch');
+        if (req.adminId) query = query.eq('admin_id', req.adminId);
+
+        const { data, error } = await query;
         if (error) throw error;
 
         const batches = [...new Set(data.map(s => s.batch).filter(Boolean))].sort();
@@ -141,11 +147,11 @@ const seedStudents = async (req, res) => {
     try {
         // 1. Create Dummy Students with Batch and Section
         const dummyStudents = [
-            { name: "Ali Khan", reg_no: "2021-CS-001", email: "ali@example.com", batch: "2021", section: "A", father_name: "Amjad Khan", current_city: "Lahore" },
-            { name: "Sara Ahmed", reg_no: "2021-CS-002", email: "sara@example.com", batch: "2021", section: "A", father_name: "Ahmed Ali", current_city: "Karachi" },
-            { name: "Bilal Raza", reg_no: "2021-CS-003", email: "bilal@example.com", batch: "2021", section: "B", father_name: "Raza Ullah", current_city: "Islamabad" },
-            { name: "Zainab Bibi", reg_no: "2021-CS-004", email: "zainab@example.com", batch: "2021", section: "B", father_name: "Muhammad Ali", current_city: "Faisalabad" },
-            { name: "Usman Ghani", reg_no: "2021-CS-005", email: "usman@example.com", batch: "2021", section: "A", father_name: "Ghani Khan", current_city: "Peshawar" }
+            { name: "Ali Khan", reg_no: "2021-CS-001", email: "ali@example.com", batch: "2021", section: "A", father_name: "Amjad Khan", current_city: "Lahore", admin_id: req.adminId },
+            { name: "Sara Ahmed", reg_no: "2021-CS-002", email: "sara@example.com", batch: "2021", section: "A", father_name: "Ahmed Ali", current_city: "Karachi", admin_id: req.adminId },
+            { name: "Bilal Raza", reg_no: "2021-CS-003", email: "bilal@example.com", batch: "2021", section: "B", father_name: "Raza Ullah", current_city: "Islamabad", admin_id: req.adminId },
+            { name: "Zainab Bibi", reg_no: "2021-CS-004", email: "zainab@example.com", batch: "2021", section: "B", father_name: "Muhammad Ali", current_city: "Faisalabad", admin_id: req.adminId },
+            { name: "Usman Ghani", reg_no: "2021-CS-005", email: "usman@example.com", batch: "2021", section: "A", father_name: "Ghani Khan", current_city: "Peshawar", admin_id: req.adminId }
         ];
 
         const { data: createdStudents, error: sError } = await supabaseAdmin
@@ -191,7 +197,8 @@ const seedGlobalStudents = async (req, res) => {
                         batch: batch,
                         section: section,
                         father_name: `Father ${count}`,
-                        current_city: i % 2 === 0 ? "Lahore" : "Islamabad"
+                        current_city: i % 2 === 0 ? "Lahore" : "Islamabad",
+                        admin_id: req.adminId
                     });
                     count++;
                 }

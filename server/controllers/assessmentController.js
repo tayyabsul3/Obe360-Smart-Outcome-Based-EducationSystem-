@@ -623,7 +623,7 @@ const importAssessments = async (req, res) => {
             }
 
             // 2. Fetch CLOs for mapping
-            const { data: clos } = await supabaseAdmin.from('clos').select('id, code').eq('course_id', courseId);
+            const { data: clos } = await supabaseAdmin.from('course_learning_outcomes').select('id, code').eq('course_id', courseId);
             const cloMap = {};
             clos.forEach(c => cloMap[c.code] = c.id);
 

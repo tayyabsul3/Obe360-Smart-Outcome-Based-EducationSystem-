@@ -1,14 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-    font-family: "Roboto";
-    src: url("./fonts/Roboto-VariableFont_wdth,wght.ttf") format("truetype");
+body {
+    font-family: 'Poppins', sans-serif;
 }
 
-body {
-    font-family: 'Roboto', sans-serif;
+/* Reset all excessive letter-spacing/tracking as requested, except for OTP inputs */
+.tracking-widest, 
+.tracking-wider, 
+.tracking-wide, 
+[class*="tracking-"] {
+    letter-spacing: 0px !important;
+}
+
+.tracking-\[0\.5em\],
+.font-mono[class*="tracking-"] {
+    letter-spacing: 0.5em !important;
 }
 
 @layer base {

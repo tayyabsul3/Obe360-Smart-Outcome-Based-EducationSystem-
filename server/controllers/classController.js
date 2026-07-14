@@ -7,6 +7,21 @@ const getClasses = async (req, res) => {
     try {
         let query = supabaseAdmin.from('classes').select('*, program:programs(code)');
 
+        if (req.adminId) {
+            const { data: adminProgs, error: pErr } = await supabaseAdmin
+                .from('programs')
+                .select('id')
+                .eq('admin_id', req.adminId);
+            if (pErr) throw pErr;
+            const progIds = adminProgs?.map(p => p.id) || [];
+            
+            if (progIds.length > 0) {
+                query = query.in('program_id', progIds);
+            } else {
+                return res.json([]);
+            }
+        }
+
         if (programId) {
             query = query.eq('program_id', programId);
         }

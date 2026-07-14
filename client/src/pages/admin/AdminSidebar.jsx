@@ -6,13 +6,14 @@ import {
     Users,
     FileSpreadsheet,
     Settings,
-    FileText,
     GraduationCap,
-    CalendarDays
+    Building
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import useAuthStore from '@/store/authStore';
 
 export default function AdminSidebar() {
+    const { user } = useAuthStore();
     const navItems = [
         { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
         { label: 'Programs', to: '/admin/programs', icon: GraduationCap },
@@ -23,15 +24,20 @@ export default function AdminSidebar() {
         { label: 'Settings', to: '/admin/settings', icon: Settings },
     ];
 
+    const orgName = user?.user_metadata?.organization_name || 'Administration';
+    const orgCode = user?.user_metadata?.organization_code || 'Institutional OBE';
+    const initials = orgCode.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'AD';
+
     return (
         <aside className="w-[220px] h-[100dvh] sticky top-0 bg-slate-900 text-slate-300 hidden md:flex flex-col border-r border-slate-800 shrink-0">
+            {/* Dynamic Branding Header */}
             <div className="p-5 flex flex-col gap-1 border-b border-slate-800/50 bg-slate-950/20 mb-2">
-                <h2 className="text-lg font-black text-slate-100 tracking-wide uppercase flex items-center gap-2">
-                    <div className="w-1.5 h-5 bg-blue-600 rounded-full shadow-lg shadow-blue-500/30"></div>
-                    Administration
+                <h2 className="text-sm font-bold text-slate-100 truncate flex items-center gap-2">
+                    <div className="w-1.5 h-5 bg-blue-600 rounded-full shrink-0"></div>
+                    <span className="truncate">{orgCode}</span>
                 </h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed ml-3.5">
-                    Institutional OBE <br/> Management
+                <p className="text-[10px] text-slate-400 font-medium leading-relaxed ml-3.5 truncate uppercase tracking-wider">
+                    {orgName}
                 </p>
             </div>
 
@@ -56,14 +62,19 @@ export default function AdminSidebar() {
                 ))}
             </nav>
 
+            {/* Dynamic Admin Profile branding */}
             <div className="p-4 border-t border-slate-800 bg-slate-950/50">
                 <div className="flex items-center gap-3 px-2">
-                    <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white font-black text-xs">
-                        AD
+                    <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                        {initials}
                     </div>
-                    <div>
-                        <p className="text-xs font-black text-white uppercase">Administrator</p>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase">Super User</p>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-white truncate leading-tight">
+                            {user?.user_metadata?.full_name || 'Administrator'}
+                        </p>
+                        <p className="text-[9px] text-slate-500 font-medium uppercase tracking-wider truncate mt-0.5">
+                            {orgCode}
+                        </p>
                     </div>
                 </div>
             </div>

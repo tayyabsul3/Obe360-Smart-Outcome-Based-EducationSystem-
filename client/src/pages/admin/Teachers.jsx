@@ -16,6 +16,7 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
     AlertDialog,
@@ -42,6 +43,7 @@ export default function Teachers() {
     const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
     const [teacherToDelete, setTeacherToDelete] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [adminKey, setAdminKey] = useState('');
 
     // Invitation Form State
     const [inviteEmail, setInviteEmail] = useState('');
@@ -99,12 +101,39 @@ export default function Teachers() {
         }
     };
 
+    const handleToggleStatus = async (teacher) => {
+        const newStatus = !(teacher.is_active !== false); // Default to true if undefined/null
+        try {
+            const res = await fetch(`/api/teachers/${teacher.id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: newStatus })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(`Teacher account ${newStatus ? 'activated' : 'deactivated'} successfully`);
+                setTeachers(teachers.map(t => t.id === teacher.id ? { ...t, is_active: newStatus } : t));
+            } else {
+                toast.error("Status update failed", { description: data.error || "Unknown error" });
+            }
+        } catch (error) {
+            console.error("Toggle status error:", error);
+            toast.error("Network Error. Could not update status.");
+        }
+    };
+
     const handleDelete = async () => {
         if (!teacherToDelete) return;
+        if (!adminKey.trim()) {
+            toast.error("Admin Key is required");
+            return;
+        }
         setDeleting(true);
         try {
-            const res = await fetch(`/api/teachers/${teacherToDelete.id}`, {
+            const res = await fetch(`/api/teachers/${teacherToDelete.id}?adminKey=${encodeURIComponent(adminKey)}`, {
                 method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adminKey })
             });
             
             if (res.ok) {
@@ -116,7 +145,7 @@ export default function Teachers() {
                 }
             } else {
                 const error = await res.json();
-                toast.error("Deletion failed", { description: error.message || "Unknown error" });
+                toast.error("Deletion failed", { description: error.error || error.message || "Unknown error" });
             }
         } catch (error) {
             console.error("Delete error:", error);
@@ -125,11 +154,13 @@ export default function Teachers() {
             setDeleting(false);
             setDeleteAlertOpen(false);
             setTeacherToDelete(null);
+            setAdminKey('');
         }
     };
 
     const confirmDelete = (teacher) => {
         setTeacherToDelete(teacher);
+        setAdminKey('');
         setDeleteAlertOpen(true);
     };
 
@@ -157,10 +188,10 @@ export default function Teachers() {
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search teachers..."
-                            className="pl-8"
+                            className="pl-9"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
@@ -236,9 +267,15 @@ export default function Teachers() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest bg-green-100 text-green-700">
-                                                Active
-                                            </span>
+                                            {teacher.is_active !== false ? (
+                                                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest bg-green-100 text-green-700">
+                                                    Active
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-700">
+                                                    Deactivated
+                                                </span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-xs font-bold text-slate-600">{new Date(teacher.updated_at || Date.now()).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right pr-8">
@@ -252,7 +289,14 @@ export default function Teachers() {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                     <DropdownMenuItem 
-                                                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                                                        className="cursor-pointer"
+                                                        onClick={() => handleToggleStatus(teacher)}
+                                                    >
+                                                        {teacher.is_active !== false ? 'Deactivate' : 'Activate'}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem 
+                                                        className="text-red-650 focus:text-red-650 cursor-pointer font-semibold"
                                                         onClick={() => confirmDelete(teacher)}
                                                     >
                                                         <Trash2 className="mr-2 h-4 w-4" />
@@ -331,20 +375,33 @@ export default function Teachers() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete the account for <span className="font-bold text-slate-900">{teacherToDelete?.full_name}</span>. 
-                            This action cannot be undone, and all their data will be wiped or anonymized.
+                        <AlertDialogDescription className="space-y-4">
+                            <span>
+                                This will permanently delete the account for <span className="font-bold text-slate-900">{teacherToDelete?.full_name}</span>. 
+                                This action cannot be undone.
+                            </span>
+                            <div className="mt-4 space-y-2">
+                                <Label htmlFor="adminKey" className="text-xs font-semibold text-slate-700">Enter Admin Access Key to confirm deletion:</Label>
+                                <Input
+                                    id="adminKey"
+                                    type="password"
+                                    placeholder="Admin Access Key"
+                                    value={adminKey}
+                                    onChange={(e) => setAdminKey(e.target.value)}
+                                    className="w-full h-11"
+                                />
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel onClick={() => setAdminKey('')} disabled={deleting}>Cancel</AlertDialogCancel>
                         <AlertDialogAction 
                             onClick={(e) => { e.preventDefault(); handleDelete(); }}
                             className="bg-red-600 hover:bg-red-700 text-white"
-                            disabled={deleting}
+                            disabled={deleting || !adminKey.trim()}
                         >
                             {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                            {deleting ? 'Deleting...' : 'Delete Permanently'}
+                            {deleting ? 'Deleting...' : 'Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

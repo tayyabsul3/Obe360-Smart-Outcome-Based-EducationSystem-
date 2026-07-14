@@ -107,6 +107,14 @@ export default function Programs() {
     const [totalPlos, setTotalPlos] = useState(0);
     const [activeBatches, setActiveBatches] = useState(0);
 
+    // Course Unassignment Two-Step Warning State
+    const [removalMappingId, setRemovalMappingId] = useState(null);
+    const [removalCourse, setRemovalCourse] = useState(null);
+    const [removalWarningStep, setRemovalWarningStep] = useState(0); // 0 = closed, 1 = warning 1, 2 = warning 2
+    const [confirmInputText, setConfirmInputText] = useState('');
+    const [isCourseAssignedWarning, setIsCourseAssignedWarning] = useState(false);
+    const [forceRemoveOverride, setForceRemoveOverride] = useState(false);
+
     useEffect(() => {
         fetchPrograms();
         fetchAllCourses();
@@ -201,15 +209,41 @@ export default function Programs() {
         }
     };
 
-    const handleRemoveFromStudyPlan = async (mappingId) => {
+    const handleInitiateRemoveFromStudyPlan = async (item) => {
+        setRemovalMappingId(item.id);
+        setRemovalCourse(item.course);
+        setConfirmInputText('');
+        setForceRemoveOverride(false);
+        setIsCourseAssignedWarning(false);
+        
         try {
-            const res = await fetch(`/api/courses/program/unassign/${mappingId}`, {
+            // Check if course is assigned in this program
+            const res = await fetch(`/api/assignments?programId=${selectedProgram.id}`);
+            if (res.ok) {
+                const assignments = await res.json();
+                const isAssigned = assignments.some(a => a.course_id === item.course_id);
+                setIsCourseAssignedWarning(isAssigned);
+            }
+        } catch (error) {
+            console.error("Error checking assignments:", error);
+        }
+        
+        setRemovalWarningStep(1); // Open step 1
+    };
+
+    const handleRemoveFromStudyPlan = async () => {
+        if (!removalMappingId) return;
+        try {
+            const res = await fetch(`/api/courses/program/unassign/${removalMappingId}`, {
                 method: 'DELETE'
             });
 
             if (res.ok) {
                 toast.success("Course removed from study plan");
                 fetchStudyPlan(selectedProgram.id);
+                setRemovalWarningStep(0);
+                setRemovalMappingId(null);
+                setRemovalCourse(null);
             } else {
                 toast.error("Failed to remove course");
             }
@@ -593,6 +627,7 @@ export default function Programs() {
                 setPreviewOpen(false);
                 if (importType === 'PROGRAM') fetchPrograms();
                 if (importType === 'PLO' && selectedProgram) fetchPLOs(selectedProgram?.id);
+                if (importType === 'STUDY_PLAN' && selectedProgram) fetchStudyPlan(selectedProgram?.id);
             } else {
                 toast.error("Import Failed", { description: result.error });
             }
@@ -925,7 +960,7 @@ export default function Programs() {
                                                                         className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 rounded-lg"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            handleRemoveFromStudyPlan(item.id);
+                                                                            handleInitiateRemoveFromStudyPlan(item);
                                                                         }}
                                                                     >
                                                                         <Trash2 size={12} />
@@ -1271,6 +1306,111 @@ export default function Programs() {
                     <div className="mt-10 flex gap-3">
                         <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold uppercase text-[10px] tracking-widest" onClick={() => setEditPloOpen(false)}>Cancel</Button>
                         <Button onClick={saveEditPlo} className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest shadow-xl">Save</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* 6. Course Unassign Warning Step 1 */}
+            <Dialog open={removalWarningStep === 1} onOpenChange={(val) => { if(!val) setRemovalWarningStep(0); }}>
+                <DialogContent className="rounded-[2rem] border-0 shadow-2xl p-10 max-w-lg">
+                    <DialogHeader className="space-y-3">
+                        <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2 text-orange-600">
+                            ⚠️ Warning: Remove Course
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium leading-relaxed">
+                            You are about to remove <strong className="text-slate-800 font-semibold">{removalCourse?.title} ({removalCourse?.code})</strong> from the study plan of <strong className="text-slate-800 font-semibold">{selectedProgram?.title}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="my-6">
+                        {isCourseAssignedWarning ? (
+                            <div className="bg-red-50 border border-red-100 rounded-2xl p-5 space-y-4">
+                                <div className="text-xs text-red-700 font-medium leading-relaxed flex gap-2">
+                                    <span className="shrink-0 mt-0.5">⚠️</span>
+                                    <span>
+                                        Warning: This course is currently active and assigned to a teacher. If you remove it, the teacher's classes, gradebooks, and student marks will be lost.
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 pt-2 border-t border-red-100/50">
+                                    <Checkbox
+                                        id="force-override"
+                                        checked={forceRemoveOverride}
+                                        onCheckedChange={setForceRemoveOverride}
+                                        className="border-red-300"
+                                    />
+                                    <label htmlFor="force-override" className="text-xs font-semibold text-red-700 cursor-pointer select-none">
+                                        I want to remove this course anyway.
+                                    </label>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-xs text-blue-700 font-medium leading-relaxed flex gap-2">
+                                <span className="shrink-0 mt-0.5">ℹ️</span>
+                                <span>
+                                    This course has no active classes or teacher assignments. It is safe to remove.
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                        <Button 
+                            variant="ghost" 
+                            className="flex-1 h-12 rounded-2xl font-bold uppercase text-[10px] tracking-widest" 
+                            onClick={() => { setRemovalWarningStep(0); setForceRemoveOverride(false); }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            disabled={isCourseAssignedWarning && !forceRemoveOverride}
+                            onClick={() => setRemovalWarningStep(2)} 
+                            className="flex-[2] h-12 rounded-2xl bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest shadow-xl disabled:opacity-50"
+                        >
+                            Yes, Proceed
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* 7. Course Unassign Warning Step 2 */}
+            <Dialog open={removalWarningStep === 2} onOpenChange={(val) => { if(!val) setRemovalWarningStep(0); }}>
+                <DialogContent className="rounded-[2rem] border-0 shadow-2xl p-10 max-w-lg">
+                    <DialogHeader className="space-y-3">
+                        <DialogTitle className="text-2xl font-black text-red-600 tracking-tight">
+                            🔒 Are you absolutely sure?
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium leading-relaxed">
+                            This action will permanently delete all student marks, enrollments, and mappings for this course. This cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="my-6 space-y-4">
+                        <p className="text-xs font-semibold text-slate-500">
+                            Type <span className="text-red-600 font-bold">{removalCourse?.code}</span> to confirm:
+                        </p>
+                        <Input
+                            value={confirmInputText}
+                            onChange={(e) => setConfirmInputText(e.target.value)}
+                            placeholder={`e.g. ${removalCourse?.code}`}
+                            className="h-12 rounded-xl bg-slate-50 border-0 focus:bg-white text-slate-800 font-bold"
+                        />
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                        <Button 
+                            variant="ghost" 
+                            className="flex-1 h-12 rounded-2xl font-bold uppercase text-[10px] tracking-widest" 
+                            onClick={() => { setRemovalWarningStep(0); setConfirmInputText(''); }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            disabled={confirmInputText !== removalCourse?.code}
+                            onClick={handleRemoveFromStudyPlan} 
+                            className="flex-[2] h-12 rounded-2xl bg-red-650 hover:bg-red-700 text-white font-black uppercase text-[10px] tracking-widest shadow-xl disabled:opacity-50 shadow-red-600/10"
+                        >
+                            Delete Course Data
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>

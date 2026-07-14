@@ -24,11 +24,6 @@ export default function AdminRootLayout() {
                         <Outlet />
                     </div>
                 </main>
-
-                <footer className="h-6 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    <span>OBE 360 Admin v2.0 - Management Console</span>
-                    <span>System Time: {new Date().toLocaleTimeString()}</span>
-                </footer>
             </div>
         </div>
     );

@@ -173,7 +173,7 @@ export default function PLOAttainment() {
     if (loading) return <div className="p-8 space-y-4"><Skeleton className="h-20 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
     return (
-        <div className="p-6 bg-white min-h-screen font-sans">
+        <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm font-sans">
             <h2 className="text-[22px] text-slate-500 mb-6">PLOs Attainment</h2>
 
             <div className="flex flex-wrap items-start gap-x-16 gap-y-4 text-[13px] text-slate-700 mb-10">

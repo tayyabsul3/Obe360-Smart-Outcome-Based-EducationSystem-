@@ -9,13 +9,24 @@ const generatePassword = (length = 12) => {
 
 // Invite a teacher by email
 const inviteTeacher = async (req, res) => {
-  const { email, fullName } = req.body;
+  const { email, fullName, invitedBy } = req.body;
+  const adminId = req.adminId || invitedBy;
 
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
   }
 
   try {
+    // 1. Fetch inviting Admin's profile to copy organization info
+    let adminProfile = null;
+    if (adminId) {
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('organization_name, organization_code')
+        .eq('id', adminId)
+        .single();
+      adminProfile = profileData;
+    }
 
     const password = generatePassword();
 
@@ -25,7 +36,10 @@ const inviteTeacher = async (req, res) => {
       email_confirm: true,
       user_metadata: {
         full_name: fullName || 'Teacher',
-        role: 'teacher' // Metadata role (optional, depending on trigger logic)
+        role: 'teacher',
+        admin_id: adminId,
+        organization_name: adminProfile?.organization_name,
+        organization_code: adminProfile?.organization_code
       }
     });
 
@@ -35,6 +49,35 @@ const inviteTeacher = async (req, res) => {
       console.error('Full Error Object:', JSON.stringify(error, null, 2));
       console.error('================================================\n');
       return res.status(400).json({ error: error.message, fullError: error });
+    }
+
+    // 2. Upsert profiles table with teacher role and organization (with retry for trigger race condition)
+    let teacherProfileSet = false;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+      const { error: upsertErr } = await supabaseAdmin
+        .from('profiles')
+        .upsert({
+          id: data.user.id,
+          role: 'teacher',
+          full_name: fullName || 'Teacher',
+          email: email,
+          admin_id: adminId,
+          organization_name: adminProfile?.organization_name,
+          organization_code: adminProfile?.organization_code,
+          is_first_login: true
+        }, { onConflict: 'id' });
+
+      if (!upsertErr) {
+        teacherProfileSet = true;
+        console.log(`[INVITE] Teacher profile upsert succeeded on attempt ${attempt + 1}`);
+        break;
+      }
+      console.warn(`[INVITE] Teacher profile upsert attempt ${attempt + 1} failed:`, upsertErr.message);
+    }
+
+    if (!teacherProfileSet) {
+      console.error('[INVITE] CRITICAL: Could not set teacher role in profiles table after 5 attempts!');
     }
 
     const user = data.user;
@@ -65,9 +108,16 @@ const inviteTeacher = async (req, res) => {
   }
 };
 
-// Register a new user (Self-Service)
+// Register a new admin user — protected by a static passphrase
 const register = async (req, res) => {
-  const { email, password, fullName } = req.body;
+  const { email, password, fullName, adminKey, organizationName, organizationCode } = req.body;
+
+  // 1. Gate: validate the admin passphrase FIRST — before touching the DB
+  const expectedKey = process.env.ADMIN_REGISTER_KEY;
+  if (!adminKey || !expectedKey || adminKey.trim() !== expectedKey.trim()) {
+    console.warn(`[SECURITY] Blocked unauthorized admin registration attempt for email: ${email}`);
+    return res.status(403).json({ error: 'Invalid admin access key. You are not authorized to create an account.' });
+  }
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -80,6 +130,9 @@ const register = async (req, res) => {
       options: {
         data: {
           full_name: fullName,
+          role: 'admin',
+          organization_name: organizationName,
+          organization_code: organizationCode
         },
       },
     });
@@ -88,7 +141,36 @@ const register = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
 
-    res.json({ message: "Registration successful!", user: data.user, session: data.session });
+    // Explicitly set role and organization in profiles table via upsert with retry
+    // (The auth trigger that creates the profile row may not have run yet)
+    let profileSet = false;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await new Promise(r => setTimeout(r, 300 * (attempt + 1))); // 300ms, 600ms, 900ms...
+      const { error: upsertErr } = await supabaseAdmin
+        .from('profiles')
+        .upsert({
+          id: data.user.id,
+          role: 'admin',
+          full_name: fullName,
+          organization_name: organizationName,
+          organization_code: organizationCode,
+          email: email
+        }, { onConflict: 'id' });
+
+      if (!upsertErr) {
+        profileSet = true;
+        console.log(`[ADMIN] Profile upsert succeeded on attempt ${attempt + 1}`);
+        break;
+      }
+      console.warn(`[ADMIN] Profile upsert attempt ${attempt + 1} failed:`, upsertErr.message);
+    }
+
+    if (!profileSet) {
+      console.error('[ADMIN] CRITICAL: Could not set admin role in profiles table after 5 attempts!');
+    }
+
+    console.log(`[ADMIN] New admin account created for ${organizationName} (${organizationCode}): ${email}`);
+    res.json({ message: "Admin registration successful!", user: data.user, session: data.session });
   } catch (err) {
     console.error('Registration Error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -116,18 +198,72 @@ const login = async (req, res) => {
     // Fetch user profile to get role and is_first_login
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('role, is_first_login, full_name')
+      .select('role, is_first_login, full_name, admin_id, organization_name, organization_code, is_active')
       .eq('id', data.user.id)
       .single();
 
-    // Standard Login: Return session directly
-    res.json({
-      message: "Login successful!",
+    if (profile && profile.is_active === false) {
+      await supabaseAdmin.auth.signOut();
+      return res.status(403).json({ error: 'Your account has been deactivated. Please contact your organization administrator.' });
+    }
+
+    // Sync profile metadata to the user object
+    if (data.user && profile) {
+      data.user.user_metadata = {
+        ...data.user.user_metadata,
+        full_name: profile.full_name,
+        role: profile.role,
+        admin_id: profile.admin_id,
+        organization_name: profile.organization_name,
+        organization_code: profile.organization_code
+      };
+    }
+
+    // 2FA Generation
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
+
+    const tempSessionData = {
       user: data.user,
       session: data.session,
       role: profile?.role || 'teacher',
-      isFirstLogin: profile?.is_first_login,
-      requires2FA: false // Set to false to bypass frontend 2FA UI
+      isFirstLogin: profile?.is_first_login
+    };
+
+    // Update profile with 2FA code and temp session data
+    const { error: updateError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        otp_code: otpCode,
+        otp_expires_at: otpExpiresAt,
+        temp_session_data: tempSessionData
+      })
+      .eq('id', data.user.id);
+
+    if (updateError) {
+      console.error('Failed to update profile 2FA:', updateError);
+      return res.status(500).json({ error: 'Failed to initialize security session' });
+    }
+
+    // Send 2FA Email
+    try {
+      await send2FAEmail(email, otpCode, profile?.full_name || 'User');
+    } catch (emailErr) {
+      console.error('2FA Email Failure:', emailErr);
+      // Always log the OTP in Render logs so that the developer can retrieve it if SMTP fails
+      console.log(`\n=========================================\n[2FA FALLBACK] OTP for ${email} is: ${otpCode}\n=========================================\n`);
+      return res.status(500).json({ 
+        error: `SMTP connection failed. Check your SMTP_USER/PASS or firewall on Render. Debug OTP is printed in server console logs: ${otpCode}` 
+      });
+    }
+
+    // Log OTP for easy developer testing
+    console.log(`\n=========================================\n[2FA SUCCESS] OTP for ${email} is: ${otpCode}\n=========================================\n`);
+
+    res.json({
+      message: "Verification code sent to your email!",
+      requires2FA: true,
+      email: email
     });
   } catch (err) {
     console.error('Login Error:', err);
@@ -135,19 +271,70 @@ const login = async (req, res) => {
   }
 }
 
+const resendOTP = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    // Find user by email
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) return res.status(500).json({ error: 'Failed to query authentication database' });
+
+    const user = listData.users?.find(u => u.email === email);
+    if (!user) return res.status(400).json({ error: 'User not found' });
+
+    // Fetch profile for name
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name, temp_session_data')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.temp_session_data) {
+      return res.status(400).json({ error: 'No pending login session found. Please log in again.' });
+    }
+
+    // Generate new OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    await supabaseAdmin
+      .from('profiles')
+      .update({ otp_code: otpCode, otp_expires_at: otpExpiresAt })
+      .eq('id', user.id);
+
+    try {
+      await send2FAEmail(email, otpCode, profile?.full_name || 'User');
+    } catch (emailErr) {
+      console.log(`\n[2FA RESEND FALLBACK] OTP for ${email} is: ${otpCode}\n`);
+      return res.status(500).json({ error: `SMTP failed. Debug OTP is printed in server logs: ${otpCode}` });
+    }
+
+    console.log(`\n[2FA RESEND] OTP for ${email} is: ${otpCode}\n`);
+    res.json({ message: 'A new verification code has been sent to your email.' });
+  } catch (err) {
+    console.error('Resend OTP Error:', err);
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+};
+
 const verify2FA = async (req, res) => {
     const { email, code } = req.body;
     if (!email || !code) return res.status(400).json({ error: "Email and code required" });
 
     try {
         // 1. Find user by email
-        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+        const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
         
-        if (userError || !userData?.user) {
-            return res.status(400).json({ error: "User not found" });
+        if (listError) {
+            console.error('Failed to list users:', listError);
+            return res.status(500).json({ error: "Failed to query authentication database" });
         }
 
-        const user = userData.user;
+        const user = listData.users?.find(u => u.email === email);
+        if (!user) {
+            return res.status(400).json({ error: "User not found" });
+        }
 
         // 2. Fetch OTP from profile
         const { data: profile, error: profileError } = await supabaseAdmin
@@ -183,9 +370,14 @@ const verify2FA = async (req, res) => {
             })
             .eq('id', user.id);
 
+        // Always read the CURRENT role from profiles (not the cached value in temp_session_data)
+        // This handles cases where temp_session_data.role was stale/null at login time
+        const freshRole = profile.role || profile.temp_session_data?.role || 'teacher';
+
         res.json({
             message: "Login successful!",
-            ...profile.temp_session_data
+            ...profile.temp_session_data,
+            role: freshRole  // override with the freshest role value
         });
     } catch (err) {
         console.error('Verify 2FA Error:', err);
@@ -247,25 +439,41 @@ const updatePassword = async (req, res) => {
       .update({ is_first_login: false })
       .eq('id', userId);
 
+    const fs = require('fs');
+    const logPath = require('path').join(__dirname, '../debug.log');
+
     if (profileError) {
       console.error('Profile Update Error:', profileError);
-      // We don't fail the written password, but we log the error
+      fs.appendFileSync(logPath, `[ERROR] ${new Date().toISOString()} - Profile Update Error for user ${userId}: ${JSON.stringify(profileError)}\n`);
+    } else {
+      fs.appendFileSync(logPath, `[SUCCESS] ${new Date().toISOString()} - Profile Update succeeded for user ${userId}\n`);
     }
 
     res.json({ message: "Password updated successfully" });
 
   } catch (err) {
     console.error('Update Password Error:', err);
+    try {
+      const fs = require('fs');
+      const logPath = require('path').join(__dirname, '../debug.log');
+      fs.appendFileSync(logPath, `[CATCH ERROR] ${new Date().toISOString()} - General error for user ${userId}: ${err.message || err}\n`);
+    } catch(e) {}
     res.status(500).json({ error: err.message || 'Failed to update password' });
   }
 };
 
 const getTeachers = async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('role', 'teacher');
+
+    if (req.adminId) {
+      query = query.eq('admin_id', req.adminId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     res.json(data);
@@ -276,9 +484,15 @@ const getTeachers = async (req, res) => {
 
 const deleteTeacher = async (req, res) => {
   const { id } = req.params;
+  const adminKey = req.body.adminKey || req.query.adminKey;
 
   if (!id) {
     return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  const expectedKey = process.env.ADMIN_REGISTER_KEY;
+  if (!adminKey || !expectedKey || adminKey.trim() !== expectedKey.trim()) {
+    return res.status(403).json({ error: 'Invalid admin registration access key. You are not authorized to delete faculty.' });
   }
 
   try {
@@ -302,13 +516,39 @@ const deleteTeacher = async (req, res) => {
   }
 };
 
+const toggleTeacherStatus = async (req, res) => {
+  const { id } = req.params;
+  const { isActive } = req.body;
+
+  if (!id || isActive === undefined) {
+    return res.status(400).json({ error: 'User ID and isActive status are required' });
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update({ is_active: isActive })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ message: `Teacher account ${isActive ? 'activated' : 'deactivated'} successfully`, data });
+  } catch (err) {
+    console.error('Toggle Teacher Status Error:', err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
 module.exports = {
   inviteTeacher,
   register,
   login,
+  resendOTP,
   verify2FA,
   updateProfile,
   updatePassword,
   getTeachers,
-  deleteTeacher
+  deleteTeacher,
+  toggleTeacherStatus
 };

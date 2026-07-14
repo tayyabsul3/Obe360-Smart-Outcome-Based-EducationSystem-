@@ -19,6 +19,15 @@ app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
 
+// Multi-Tenant Isolation Middleware
+app.use((req, res, next) => {
+    const adminId = req.headers['x-admin-id'];
+    if (adminId) {
+        req.adminId = adminId;
+    }
+    next();
+});
+
 // Routes
 app.use('/api/semesters', require('./routes/semesterRoutes'));
 app.use('/api', authRoutes);
@@ -36,7 +45,10 @@ app.get('/', (req, res) => {
     res.send('OBE360 Server is running');
 });
 
+// const setupStorage = require('./utils/setupStorage');
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    // setupStorage();
 });

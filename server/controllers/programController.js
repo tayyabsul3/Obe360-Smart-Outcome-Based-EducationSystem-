@@ -4,10 +4,13 @@ const supabaseAdmin = require('../config/supabase');
 
 const getPrograms = async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
-            .from('programs')
-            .select('*')
-            .order('created_at', { ascending: false });
+        let query = supabaseAdmin.from('programs').select('*');
+        
+        if (req.adminId) {
+            query = query.eq('admin_id', req.adminId);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
         res.json(data);
@@ -22,7 +25,7 @@ const createProgram = async (req, res) => {
     try {
         const { data, error } = await supabaseAdmin
             .from('programs')
-            .insert([{ title, code, duration_years }])
+            .insert([{ title, code, duration_years, admin_id: req.adminId }])
             .select()
             .single();
 
@@ -40,9 +43,15 @@ const createProgramsBulk = async (req, res) => {
             return res.status(400).json({ error: "Invalid data. Expected array of programs." });
         }
 
+        // Add admin_id to all bulk programs
+        const mappedPrograms = programs.map(p => ({
+            ...p,
+            admin_id: req.adminId
+        }));
+
         const { data, error } = await supabaseAdmin
             .from('programs')
-            .insert(programs)
+            .insert(mappedPrograms)
             .select();
 
         if (error) throw error;
@@ -103,9 +112,15 @@ const getPLOsByCourse = async (req, res) => {
 
 const getAllPLOsCount = async (req, res) => {
     try {
-        const { count, error } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('plos')
-            .select('*', { count: 'exact', head: true });
+            .select('*, program:programs!inner(admin_id)', { count: 'exact', head: true });
+
+        if (req.adminId) {
+            query = query.eq('program.admin_id', req.adminId);
+        }
+
+        const { count, error } = await query;
 
         if (error) throw error;
         res.json({ count: count || 0 });
@@ -215,17 +230,51 @@ const updateProgram = async (req, res) => {
 const deleteProgram = async (req, res) => {
     const { id } = req.params;
     try {
-        // First delete associated PLOs
+        // 1. Find all courses in this program's study plan
+        const { data: programCourses, error: pcError } = await supabaseAdmin
+            .from('program_courses')
+            .select('course_id')
+            .eq('program_id', id);
+
+        if (pcError) throw pcError;
+        const courseIds = programCourses ? programCourses.map(pc => pc.course_id) : [];
+
+        // 2. Delete associated PLOs
         await supabaseAdmin.from('plos').delete().eq('program_id', id);
 
-        const { error } = await supabaseAdmin
+        // 3. Delete the program itself (this cascades to program_courses, semester_assignments)
+        const { error: deleteError } = await supabaseAdmin
             .from('programs')
             .delete()
             .eq('id', id);
 
-        if (error) throw error;
-        res.json({ message: "Program deleted successfully" });
+        if (deleteError) throw deleteError;
+
+        // 4. Clean up courses that are no longer used by any other program
+        if (courseIds.length > 0) {
+            const { data: activeCourses, error: activeErr } = await supabaseAdmin
+                .from('program_courses')
+                .select('course_id')
+                .in('course_id', courseIds);
+
+            if (!activeErr) {
+                const activeCourseIds = new Set(activeCourses ? activeCourses.map(ac => ac.course_id) : []);
+                const orphanCourseIds = courseIds.filter(cid => !activeCourseIds.has(cid));
+
+                if (orphanCourseIds.length > 0) {
+                    // Delete orphan courses (cascades to course_learning_outcomes, assessments, enrollments, etc.)
+                    await supabaseAdmin
+                        .from('courses')
+                        .delete()
+                        .in('id', orphanCourseIds);
+                    console.log(`[CASCADE CLEANUP] Deleted orphan courses: ${orphanCourseIds.join(', ')}`);
+                }
+            }
+        }
+
+        res.json({ message: "Program and associated data deleted successfully" });
     } catch (error) {
+        console.error("Delete Program error:", error);
         res.status(400).json({ error: error.message });
     }
 };

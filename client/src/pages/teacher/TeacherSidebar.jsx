@@ -154,13 +154,12 @@ export default function TeacherSidebar() {
 
     // Keep accordion synced with URL on load/refresh
     useEffect(() => {
-        if (!activeCourseId) return;
         const currentPath = location.pathname;
-        const activeItem = contextNavItems.find(item =>
-            item.isAccordion && item.subItems.some(sub => currentPath.includes(sub.to))
+        const matchingItem = contextNavItems.find(item => 
+            item.isAccordion && item.subItems.some(sub => currentPath === sub.to)
         );
-        if (activeItem) {
-            setActiveAccordion(activeItem.value);
+        if (matchingItem) {
+            setActiveAccordion(matchingItem.value);
         } else {
             setActiveAccordion("");
         }
@@ -168,12 +167,6 @@ export default function TeacherSidebar() {
 
     const handleAccordionChange = (val) => {
         setActiveAccordion(val);
-        if (val) {
-            const item = contextNavItems.find(i => i.value === val);
-            if (item && item.subItems.length > 0) {
-                navigate(item.subItems[0].to);
-            }
-        }
     };
 
     return (
@@ -254,12 +247,11 @@ export default function TeacherSidebar() {
 
                 {/* Selection Section (Bottom/Static) - Courses only */}
                 <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
-                    <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Assigned Curriculum</h3>
+                    <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">My Courses</h3>
 
                     <div className="space-y-4">
                         {/* Courses List - Static Bottom */}
                         <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">My Active Courses</label>
                             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                                 {selectedProgramId && selectedSemesterNum ? (
                                     assignedCourses.length > 0 ? (

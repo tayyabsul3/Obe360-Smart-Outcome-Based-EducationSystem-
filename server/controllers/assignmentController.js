@@ -11,6 +11,21 @@ const getAssignments = async (req, res) => {
             .from('semester_assignments')
             .select('*, course:courses(*), teacher:profiles(*)');
 
+        if (req.adminId) {
+            const { data: adminCourses, error: cErr } = await supabaseAdmin
+                .from('courses')
+                .select('id')
+                .eq('admin_id', req.adminId);
+            if (cErr) throw cErr;
+            const courseIds = adminCourses?.map(c => c.id) || [];
+            
+            if (courseIds.length > 0) {
+                query = query.in('course_id', courseIds);
+            } else {
+                return res.json([]);
+            }
+        }
+
         if (programId) query = query.eq('program_id', programId);
         if (semesterId) query = query.eq('semester_id', semesterId);
 
@@ -74,9 +89,26 @@ const getTeacherAssignments = async (req, res) => {
 
 const getAllAssignments = async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('semester_assignments')
             .select('*, course:courses(*), teacher:profiles(*), program:programs(*), semester:semesters(*)');
+
+        if (req.adminId) {
+            const { data: adminCourses, error: cErr } = await supabaseAdmin
+                .from('courses')
+                .select('id')
+                .eq('admin_id', req.adminId);
+            if (cErr) throw cErr;
+            const courseIds = adminCourses?.map(c => c.id) || [];
+            
+            if (courseIds.length > 0) {
+                query = query.in('course_id', courseIds);
+            } else {
+                return res.json([]);
+            }
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         res.json(data);

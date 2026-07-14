@@ -36,9 +36,9 @@ export default function ChangePassword() {
         setIsLoading(false);
 
         if (result.success) {
-            await useAuthStore.getState().logout(); // Logout after update
-            toast.success("Password updated successfully!", { description: "Please log in with your new password." });
-            navigate('/login');
+            useAuthStore.setState({ isFirstLogin: false });
+            toast.success("Password updated successfully!", { description: "Welcome to OBE360." });
+            navigate('/dashboard');
         } else {
             toast.error("Failed to update password", { description: result.error });
         }

@@ -123,7 +123,7 @@ export default function PLOAttainmentGraph() {
     };
 
     return (
-        <div className="bg-white min-h-screen font-sans">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm font-sans">
             {/* Page Title */}
             <h2 className="text-[22px] px-6 pt-6 text-slate-500 mb-6 font-normal">PLO Attainment Graph</h2>
 

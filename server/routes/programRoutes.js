@@ -16,12 +16,12 @@ router.get('/plos/bulk', createPLOsBulk);
 router.get('/meta/plos/count', require('../controllers/programController').getAllPLOsCount);
 router.get('/plos/course/:courseId', require('../controllers/programController').getPLOsByCourse);
 
-// Programs
-router.delete('/:id', deleteProgram);
-router.put('/:id', updateProgram);
-
 // PLOs
 router.delete('/plos/:id', deletePLO);
 router.put('/plos/:id', updatePLO);
+
+// Programs
+router.delete('/:id', deleteProgram);
+router.put('/:id', updateProgram);
 
 module.exports = router;

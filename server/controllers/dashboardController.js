@@ -2,40 +2,74 @@ const supabaseAdmin = require('../config/supabase');
 
 const getDashboardStats = async (req, res) => {
     try {
+        const adminId = req.adminId;
+
         // 1. Total Programs
-        const { count: programsCount, error: progError } = await supabaseAdmin
-            .from('programs')
-            .select('*', { count: 'exact', head: true });
+        let progQuery = supabaseAdmin.from('programs').select('*', { count: 'exact', head: true });
+        if (adminId) progQuery = progQuery.eq('admin_id', adminId);
+        const { count: programsCount, error: progError } = await progQuery;
         if (progError) throw progError;
 
         // 2. Total Courses
-        const { count: coursesCount, error: courseError } = await supabaseAdmin
-            .from('courses')
-            .select('*', { count: 'exact', head: true });
+        let courseQuery = supabaseAdmin.from('courses').select('*', { count: 'exact', head: true });
+        if (adminId) courseQuery = courseQuery.eq('admin_id', adminId);
+        const { count: coursesCount, error: courseError } = await courseQuery;
         if (courseError) throw courseError;
 
-        // 3. Active Classes
-        const { count: classesCount, error: classError } = await supabaseAdmin
-            .from('classes')
-            .select('*', { count: 'exact', head: true });
-        if (classError) throw classError;
+        // Get admin's program IDs for safe downstream counting
+        let progIds = [];
+        if (adminId) {
+            const { data: adminProgs, error: pErr } = await supabaseAdmin
+                .from('programs')
+                .select('id')
+                .eq('admin_id', adminId);
+            if (pErr) throw pErr;
+            progIds = adminProgs?.map(p => p.id) || [];
+        }
+
+        // 3. Active Classes count (safely filter by admin's program IDs)
+        let classesCount = 0;
+        if (adminId) {
+            if (progIds.length > 0) {
+                const { count, error: classError } = await supabaseAdmin
+                    .from('classes')
+                    .select('*', { count: 'exact', head: true })
+                    .in('program_id', progIds);
+                if (classError) throw classError;
+                classesCount = count || 0;
+            }
+        } else {
+            const { count, error: classError } = await supabaseAdmin
+                .from('classes')
+                .select('*', { count: 'exact', head: true });
+            if (classError) throw classError;
+            classesCount = count || 0;
+        }
 
         // 4. Faculty Members
-        const { count: teachersCount, error: teacherError } = await supabaseAdmin
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('role', 'teacher');
+        let teacherQuery = supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher');
+        if (adminId) teacherQuery = teacherQuery.eq('admin_id', adminId);
+        const { count: teachersCount, error: teacherError } = await teacherQuery;
         if (teacherError) throw teacherError;
 
-        // 5. Chart Data: Classes per Program
-        // Complex aggregation is hard with Supabase Client directly for joins/groups without Views or RCP.
-        // We will fetch all classes with program_id and aggregate in JS for simplicity (assuming small scale for now).
-        // For production, use a Database View or RPC.
-        const { data: classesData, error: chartError } = await supabaseAdmin
-            .from('classes')
-            .select('program_id, programs(code)');
-
-        if (chartError) throw chartError;
+        // 5. Chart Data: Classes per Program (safely query to avoid PostgREST relationship issues)
+        let classesData = [];
+        if (adminId) {
+            if (progIds.length > 0) {
+                const { data, error: chartError } = await supabaseAdmin
+                    .from('classes')
+                    .select('program_id, programs(code)')
+                    .in('program_id', progIds);
+                if (chartError) throw chartError;
+                classesData = data || [];
+            }
+        } else {
+            const { data, error: chartError } = await supabaseAdmin
+                .from('classes')
+                .select('program_id, programs(code)');
+            if (chartError) throw chartError;
+            classesData = data || [];
+        }
 
         const programDistribution = {};
         classesData.forEach(c => {

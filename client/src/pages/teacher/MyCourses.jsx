@@ -56,9 +56,9 @@ export default function MyCourses() {
                     <Calendar className="h-20 w-20 text-blue-500 opacity-80" strokeWidth={1.5} />
                 </div>
                 <div className="space-y-2">
-                    <h2 className="text-3xl font-black text-slate-800 tracking-tighter">Initialize Your Workflow</h2>
-                    <p className="text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">
-                        Please select a <span className="text-blue-600 font-bold">Program Semester</span> from the sidebar to begin managing your assigned curriculum.
+                    <h2 className="text-2xl font-bold text-slate-800">Initialize Your Workflow</h2>
+                    <p className="text-slate-500 font-medium max-w-sm mx-auto leading-relaxed text-sm">
+                        Please select a <span className="text-blue-600 font-semibold">Program Semester</span> from the sidebar to begin managing your assigned curriculum.
                     </p>
                 </div>
             </div>
@@ -73,9 +73,9 @@ export default function MyCourses() {
                     <BookOpen className="h-20 w-20 text-emerald-500 opacity-80" strokeWidth={1.5} />
                 </div>
                 <div className="space-y-2">
-                    <h2 className="text-3xl font-black text-slate-800 tracking-tighter">Academic Path Selected</h2>
-                    <p className="text-slate-500 font-medium max-w-md mx-auto leading-relaxed">
-                        Semester navigation is active. Now, <span className="text-emerald-600 font-bold">choose a course</span> from your assignment list to manage its OBE framework.
+                    <h2 className="text-2xl font-bold text-slate-800">Academic Path Selected</h2>
+                    <p className="text-slate-500 font-medium max-w-md mx-auto leading-relaxed text-sm">
+                        Semester navigation is active. Now, <span className="text-emerald-600 font-semibold">choose a course</span> from your assignment list to manage its OBE framework.
                     </p>
                 </div>
             </div>
@@ -96,51 +96,51 @@ export default function MyCourses() {
                 <>
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-3">
-                            <Badge className="rounded-full bg-blue-600 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 shadow-lg shadow-blue-500/20">
+                            <Badge className="rounded-full bg-blue-600 text-[10px] font-semibold uppercase px-4 py-1.5 shadow-lg shadow-blue-500/20">
                                 {courseDetails.code}
                             </Badge>
-                            <span className="text-sm font-black text-slate-300 uppercase tracking-widest">Active Specialization</span>
+                            <span className="text-xs font-semibold text-slate-400 uppercase">Active Specialization</span>
                         </div>
-                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter leading-tight mt-2">
+                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mt-2">
                             {courseDetails.title}
                         </h1>
-                        <p className="text-lg text-slate-500 font-medium max-w-2xl mt-2 leading-relaxed">
+                        <p className="text-sm text-slate-500 font-medium max-w-2xl mt-2 leading-relaxed">
                             {courseDetails.description || "In-depth exploration of core principles, methodologies, and practical applications within the specified academic domain."}
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card className="border-0 shadow-xl rounded-[2.5rem] bg-white group hover:scale-[1.02] transition-all duration-500">
+                        <Card className="border-0 shadow-md rounded-[2.5rem] bg-white group hover:-translate-y-1 transition-all duration-300">
                             <CardHeader className="p-8 pb-4">
                                 <div className="p-4 bg-orange-50 rounded-2xl w-fit mb-4">
                                     <Clock className="text-orange-600" size={24} />
                                 </div>
-                                <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Contact Hours</CardTitle>
+                                <CardTitle className="text-[10px] font-semibold text-slate-400 uppercase">Contact Hours</CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 pt-0">
-                                <p className="text-4xl font-black text-slate-800 tracking-tighter">
+                                <p className="text-3xl font-bold text-slate-800">
                                     {courseDetails.credit_hours} <span className="text-xl text-slate-400">CH</span>
                                 </p>
-                                <p className="text-xs text-slate-500 font-bold mt-2 uppercase tracking-tight">Theoretical Credits per Week</p>
+                                <p className="text-xs text-slate-400 mt-2">Theoretical Credits per Week</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-0 shadow-xl rounded-[2.5rem] bg-white group hover:scale-[1.02] transition-all duration-500">
+                        <Card className="border-0 shadow-md rounded-[2.5rem] bg-white group hover:-translate-y-1 transition-all duration-300">
                             <CardHeader className="p-8 pb-4">
                                 <div className="p-4 bg-purple-50 rounded-2xl w-fit mb-4">
                                     <FlaskConical className="text-purple-600" size={24} />
                                 </div>
-                                <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Laborary Component</CardTitle>
+                                <CardTitle className="text-[10px] font-semibold text-slate-400 uppercase">Laboratory Component</CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 pt-0">
-                                <p className="text-4xl font-black text-slate-800 tracking-tighter">
+                                <p className="text-3xl font-bold text-slate-800">
                                     {courseDetails.lab_hours || 0} <span className="text-xl text-slate-400">LH</span>
                                 </p>
-                                <p className="text-xs text-slate-500 font-bold mt-2 uppercase tracking-tight">Practical & Experimental Hours</p>
+                                <p className="text-xs text-slate-400 mt-2">Practical & Experimental Hours</p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border-0 shadow-xl rounded-[2.5rem] bg-blue-600 text-white group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden">
+                        <Card className="border-0 shadow-md rounded-[2.5rem] bg-blue-600 text-white group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-8 opacity-10">
                                 <Target size={120} />
                             </div>
@@ -148,24 +148,24 @@ export default function MyCourses() {
                                 <div className="p-4 bg-white/10 rounded-2xl w-fit mb-4">
                                     <CheckCircle2 size={24} />
                                 </div>
-                                <CardTitle className="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em]">OBE Status</CardTitle>
+                                <CardTitle className="text-[10px] font-semibold text-blue-100 uppercase">OBE Status</CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 pt-0">
-                                <p className="text-4xl font-black tracking-tighter">OPTIMIZED</p>
-                                <p className="text-xs text-blue-100/70 font-bold mt-2 uppercase tracking-tight">CLO-PLO Framework Verified</p>
+                                <p className="text-3xl font-bold">OPTIMIZED</p>
+                                <p className="text-xs text-blue-100/70 mt-2">CLO-PLO Framework Verified</p>
                             </CardContent>
                         </Card>
                     </div>
 
-                    <div className="p-10 bg-slate-100/50 rounded-[3.5rem] border border-slate-200 border-dashed flex flex-col md:flex-row items-center justify-between gap-8">
-                        <div className="space-y-4 text-center md:text-left">
-                            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Ready to synchronize progress?</h3>
-                            <p className="text-sm text-slate-500 font-medium max-w-sm">Use the sidebar tools to manage CLOs, define assessments, and track student attainment for this course.</p>
+                    <div className="p-8 bg-slate-100/50 rounded-[3rem] border border-slate-200 border-dashed flex flex-col md:flex-row items-center justify-between gap-8">
+                        <div className="space-y-2 text-center md:text-left">
+                            <h3 className="text-xl font-bold text-slate-800">Ready to synchronize progress?</h3>
+                            <p className="text-xs text-slate-500 font-medium max-w-sm">Use the sidebar tools to manage CLOs, define assessments, and track student attainment for this course.</p>
                         </div>
                         <div className="flex gap-4">
                             <Button 
                                 onClick={() => navigate(`/teacher/course/${activeCourseId}/assessments`)}
-                                className="h-14 px-8 rounded-2xl bg-slate-900 border-0 shadow-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-all"
+                                className="h-11 px-6 rounded-xl bg-slate-950 text-white hover:bg-blue-600 transition-all font-semibold text-xs shadow-md shadow-slate-950/10"
                             >
                                 Define Assessments
                             </Button>

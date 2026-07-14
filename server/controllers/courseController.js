@@ -4,10 +4,13 @@ const supabaseAdmin = require('../config/supabase');
 
 const getCourses = async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
-            .from('courses')
-            .select('*')
-            .order('created_at', { ascending: false });
+        let query = supabaseAdmin.from('courses').select('*');
+        
+        if (req.adminId) {
+            query = query.eq('admin_id', req.adminId);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
         res.json(data);
@@ -37,7 +40,7 @@ const createCourse = async (req, res) => {
     try {
         const { data, error } = await supabaseAdmin
             .from('courses')
-            .insert([{ title, code, credit_hours, lab_hours }])
+            .insert([{ title, code, credit_hours, lab_hours, admin_id: req.adminId }])
             .select()
             .single();
 
@@ -55,9 +58,14 @@ const createCoursesBulk = async (req, res) => {
             return res.status(400).json({ error: "Invalid data. Expected array of courses." });
         }
 
+        const mappedCourses = courses.map(c => ({
+            ...c,
+            admin_id: req.adminId
+        }));
+
         const { data, error } = await supabaseAdmin
             .from('courses')
-            .insert(courses)
+            .upsert(mappedCourses, { onConflict: 'admin_id, code' })
             .select();
 
         if (error) throw error;
@@ -90,6 +98,48 @@ const updateCourse = async (req, res) => {
 const deleteCourse = async (req, res) => {
     const { id } = req.params;
     try {
+        // 1. Check for dependencies
+        // Check Study Plan (program_courses)
+        const { count: studyPlanCount } = await supabaseAdmin
+            .from('program_courses')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', id);
+
+        if (studyPlanCount > 0) {
+            return res.status(400).json({ error: "Cannot delete course. It is currently mapped in a Study Plan." });
+        }
+
+        // Check Sections
+        const { count: sectionCount } = await supabaseAdmin
+            .from('sections')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', id);
+
+        if (sectionCount > 0) {
+            return res.status(400).json({ error: "Cannot delete course. It has active sections or assignments." });
+        }
+
+        // Check CLOs
+        const { count: cloCount } = await supabaseAdmin
+            .from('course_learning_outcomes')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', id);
+
+        if (cloCount > 0) {
+            return res.status(400).json({ error: "Cannot delete course. It has defined Course Learning Outcomes (CLOs)." });
+        }
+
+        // Check Enrollments
+        const { count: enrollmentCount } = await supabaseAdmin
+            .from('enrollments')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', id);
+
+        if (enrollmentCount > 0) {
+            return res.status(400).json({ error: "Cannot delete course. Students are currently enrolled in it." });
+        }
+
+        // 2. Perform deletion if no dependencies
         const { error } = await supabaseAdmin
             .from('courses')
             .delete()
@@ -157,18 +207,22 @@ const removeCourseFromProgram = async (req, res) => {
 
 const addCoursesToStudyPlanBulk = async (req, res) => {
     const { items } = req.body; // Expects array of { program_code, course_code, semester }
+    const adminId = req.adminId;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "Invalid data. Expected array of items." });
     }
 
     try {
-        // 1. Fetch all Programs and Courses to map Codes to IDs
-        // Optimization: In a real app, we might query only relevant ones, but for now fetch all is fine for small scale.
-        const { data: programs, error: progError } = await supabaseAdmin.from('programs').select('id, code');
+        // 1. Fetch Programs and Courses scoped by this admin to map Codes to IDs
+        let progQuery = supabaseAdmin.from('programs').select('id, code');
+        if (adminId) progQuery = progQuery.eq('admin_id', adminId);
+        const { data: programs, error: progError } = await progQuery;
         if (progError) throw progError;
 
-        const { data: courses, error: courseError } = await supabaseAdmin.from('courses').select('id, code');
+        let courseQuery = supabaseAdmin.from('courses').select('id, code');
+        if (adminId) courseQuery = courseQuery.eq('admin_id', adminId);
+        const { data: courses, error: courseError } = await courseQuery;
         if (courseError) throw courseError;
 
         const programMap = new Map(programs.map(p => [p.code, p.id]));
@@ -187,7 +241,8 @@ const addCoursesToStudyPlanBulk = async (req, res) => {
                     course_id: courseId,
                     semester: parseInt(item.semester),
                     course_type: 'Core', // Defaulting to Core for now
-                    is_lab_embedded: false
+                    is_lab_embedded: false,
+                    admin_id: adminId // Store admin_id if table has it
                 });
             } else {
                 errors.push(`Could not map: ${item.program_code} - ${item.course_code}`);
@@ -195,13 +250,14 @@ const addCoursesToStudyPlanBulk = async (req, res) => {
         }
 
         if (toInsert.length > 0) {
+            // Use upsert to ignore duplicates instead of throwing database unique constraint errors
             const { data, error } = await supabaseAdmin
                 .from('program_courses')
-                .insert(toInsert)
+                .upsert(toInsert, { onConflict: 'program_id, course_id, semester', ignoreDuplicates: true })
                 .select();
 
             if (error) throw error;
-            res.json({ success: true, inserted: data.length, data, errors });
+            res.json({ success: true, inserted: data ? data.length : 0, data, errors });
         } else {
             res.json({ success: false, inserted: 0, errors });
         }

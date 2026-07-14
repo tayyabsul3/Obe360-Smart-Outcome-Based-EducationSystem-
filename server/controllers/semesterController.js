@@ -4,10 +4,15 @@ const supabaseAdmin = require('../config/supabase');
 
 const getSemesters = async (req, res) => {
     try {
-        const { data, error } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('semesters')
-            .select('*')
-            .order('name', { ascending: false });
+            .select('*');
+
+        if (req.adminId) {
+            query = query.eq('admin_id', req.adminId);
+        }
+
+        const { data, error } = await query.order('name', { ascending: false });
 
         if (error) throw error;
         res.json(data);
@@ -18,10 +23,11 @@ const getSemesters = async (req, res) => {
 
 const createSemester = async (req, res) => {
     const { name, is_active } = req.body;
+    const adminId = req.adminId;
     try {
         const { data, error } = await supabaseAdmin
             .from('semesters')
-            .insert([{ name, is_active }])
+            .insert([{ name, is_active, admin_id: adminId }])
             .select()
             .single();
 
@@ -34,25 +40,37 @@ const createSemester = async (req, res) => {
 
 const setActiveSemester = async (req, res) => {
     const id = req.params.id.trim();
-    console.log('Activating semester ID:', id);
+    const adminId = req.adminId;
+    console.log('Activating semester ID:', id, 'for admin:', adminId);
     try {
-        // 1. Deactivate any currently active semesters
-        const { error: deactivateError } = await supabaseAdmin
+        // 1. Deactivate any currently active semesters for THIS admin only
+        let deactivateQuery = supabaseAdmin
             .from('semesters')
             .update({ is_active: false })
             .eq('is_active', true);
+            
+        if (adminId) {
+            deactivateQuery = deactivateQuery.eq('admin_id', adminId);
+        }
+        
+        const { error: deactivateError } = await deactivateQuery;
 
         if (deactivateError) {
             console.error('Deactivation error:', deactivateError);
             throw deactivateError;
         }
 
-        // 2. Activate the target semester
-        const { data, error } = await supabaseAdmin
+        // 2. Activate the target semester (and verify it belongs to this admin)
+        let activateQuery = supabaseAdmin
             .from('semesters')
             .update({ is_active: true })
-            .eq('id', id)
-            .select();
+            .eq('id', id);
+            
+        if (adminId) {
+            activateQuery = activateQuery.eq('admin_id', adminId);
+        }
+        
+        const { data, error } = await activateQuery.select();
 
         if (error) {
             console.error('Activation error:', error);

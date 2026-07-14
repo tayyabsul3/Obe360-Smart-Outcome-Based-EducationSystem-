@@ -252,7 +252,7 @@ export default function PLOReport() {
     const { studentResults, graphData, activePlos } = getAttainmentData();
 
     return (
-        <div className="p-6 bg-white min-h-screen font-sans max-w-[1400px] mx-auto animate-in fade-in">
+        <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm font-sans max-w-[1400px] mx-auto animate-in fade-in">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
