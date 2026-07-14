@@ -120,6 +120,27 @@ npm run dev
 
 ---
 
+## 📅 Recent System Updates (July 14, 2026)
+
+We implemented critical data isolation, backend refactoring, and UI/UX modernization changes:
+
+### 1. Multi-Tenancy Data Isolation (University A vs. University B)
+- **Scoped Entities:** Filtered Programs, Courses, PLOs, Classes, Student Rosters, and Assignments strictly by the university admin's `admin_id`.
+- **CSV Import Mapping:** Refactored study plan bulk template CSV parser to query database rows scoped by the active admin ID, avoiding program name collisions across tenants.
+- **Semester Scoping:** Separated Academic Semesters (Terms) by adding an `admin_id` column to the `semesters` table via **Migration 22**. Activating/deactivating terms is now fully isolated per organization.
+
+### 2. Authentication & 2FA Hardening
+- **Client-Side Password Reset:** Switched first-login password enforcement flow to execute client-side directly using Supabase Auth Client. This updates the user's password and disables the `is_first_login` flag without invalidating the active session JWT.
+- **2FA Resend Cool-down:** Implemented a visual 60-second OTP resend timer button.
+- **Profile Retries:** Added self-healing SQL query retry triggers to handle slow profile creation triggers on user signup.
+
+### 3. UI/UX Refinement & Layouts
+- **Breathable Headers:** Modernized both Admin and Teacher portal headers. Spaced out elements by increasing their height to `68px`, adding divider lines, and utilizing soft-neutral action elements with beautiful slate-gradient profile avatars.
+- **Sidebar Upgrades:** Fixed navigation highlights inside `TeacherSidebar.jsx` and removed redundant headings and labels above the active courses list.
+- **Scroll Conflict Resolvers:** Cleaned up page scroll layouts to prevent double-scrollbar glitches on the portals.
+
+---
+
 ## 👨‍💻 Development & Contribution
 
 - **Admin Access**: When first registering your Super Admin account, ensure the backend logic or Supabase dashboard assigns the role `admin` to your `users` table record.
