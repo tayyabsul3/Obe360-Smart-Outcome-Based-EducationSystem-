@@ -219,6 +219,7 @@ const login = async (req, res) => {
       };
     }
 
+    /*
     // 2FA Generation
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
@@ -264,6 +265,17 @@ const login = async (req, res) => {
       message: "Verification code sent to your email!",
       requires2FA: true,
       email: email
+    });
+    */
+
+    // Bypassing 2FA temporarily: direct login response
+    res.json({
+      message: "Login successful!",
+      user: data.user,
+      session: data.session,
+      role: profile?.role || 'teacher',
+      isFirstLogin: profile?.is_first_login,
+      requires2FA: false
     });
   } catch (err) {
     console.error('Login Error:', err);
